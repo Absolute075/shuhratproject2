@@ -25,6 +25,10 @@ type ApplicationSubmitResponse = {
   status: string
 }
 
+type ApplyFormInnerProps = {
+  showPaymentReturn?: boolean
+}
+
 function digitsOnly(value: string) {
   return value.replace(/\D+/g, '')
 }
@@ -46,7 +50,7 @@ async function submitApplication(payload: ApplicationSubmitRequest): Promise<App
   return res.json()
 }
 
-export default function App() {
+export function ApplyFormInner({ showPaymentReturn = true }: ApplyFormInnerProps) {
   const defaultDial = useMemo(() => {
     const uz = COUNTRIES.find((c) => c.code === 'UZ')
     return uz?.dial ?? '+998'
@@ -126,39 +130,38 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b1220] text-gray-200">
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <header className="rounded-3xl border border-white/10 bg-white/5 p-7">
-          <div className="text-sm font-semibold text-white/70">EIMUN 2026</div>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">Application Form</h1>
-          <p className="mt-3 text-sm leading-relaxed text-white/70">
-            Application fee: <span className="font-semibold text-white">{feeText}</span>
-          </p>
-        </header>
+    <>
+      <header className="rounded-3xl border border-white/10 bg-white/5 p-7">
+        <div className="text-sm font-semibold text-white/70">EIMUN 2026</div>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Application Form</h1>
+        <p className="mt-3 text-sm leading-relaxed text-white/70">
+          Application fee: <span className="font-semibold text-white">{feeText}</span>
+        </p>
+      </header>
 
-        {(returnedPaymentId || returnedStatus) && (
-          <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
-            <div className="font-semibold">Payment return</div>
-            <div className="mt-2">
-              Payment ID: <span className="font-mono">{returnedPaymentId ?? '-'}</span>
-            </div>
-            <div>
-              Status: <span className="font-mono">{returnedStatus ?? '-'}</span>
-            </div>
+      {showPaymentReturn && (returnedPaymentId || returnedStatus) && (
+        <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
+          <div className="font-semibold">Payment return</div>
+          <div className="mt-2">
+            Payment ID: <span className="font-mono">{returnedPaymentId ?? '-'}</span>
           </div>
-        )}
+          <div>
+            Status: <span className="font-mono">{returnedStatus ?? '-'}</span>
+          </div>
+        </div>
+      )}
 
-        <form onSubmit={onSubmit} className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-7">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Full Name</span>
-              <input
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                placeholder="Your full name"
-              />
-            </label>
+      <form onSubmit={onSubmit} className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-7">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <label className="grid gap-2 sm:col-span-2">
+            <span className="text-sm font-semibold">Full Name</span>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
+              placeholder="Your full name"
+            />
+          </label>
 
             <label className="grid gap-2 sm:col-span-2">
               <span className="text-sm font-semibold">Email address</span>
@@ -345,14 +348,23 @@ export default function App() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90 disabled:opacity-60"
-          >
-            {loading ? 'Submitting…' : 'Submit application and pay'}
-          </button>
-        </form>
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-6 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90 disabled:opacity-60"
+        >
+          {loading ? 'Submitting…' : 'Submit application and pay'}
+        </button>
+      </form>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <div className="min-h-screen bg-[#0b1220] text-gray-200">
+      <div className="mx-auto max-w-4xl px-6 py-10">
+        <ApplyFormInner />
 
         <footer className="mt-10 text-center text-xs text-white/45">
           Frontend: http://localhost:5173 · Backend: http://localhost:8080

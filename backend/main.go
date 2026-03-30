@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +16,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
+
+type octoNotifyCallback struct {
+	ShopTransactionID string `json:"shop_transaction_id"`
+	PaymentUUID       string `json:"octo_payment_UUID"`
+	Status            string `json:"status"`
+	Signature         string `json:"signature"`
+	HashKey           string `json:"hash_key"`
+}
 
 func main() {
 	_ = godotenv.Load()
@@ -73,12 +82,13 @@ func main() {
 			phone := digitsOnly(req.PhoneCountryDial) + digitsOnly(req.PhoneNumber)
 
 			paymentResp, err := provider.CreatePayment(r.Context(), createPaymentRequest{
-				Amount:      cfg.ApplicationFee,
-				Currency:    cfg.OctoCurrency,
-				Description: "EIMUN 2026 application fee",
-				FullName:    req.FullName,
-				Email:       req.Email,
-				Phone:       phone,
+				ShopTransactionID: applicationID,
+				Amount:            cfg.ApplicationFee,
+				Currency:          cfg.OctoCurrency,
+				Description:       "EIMUN 2026 application fee",
+				FullName:          req.FullName,
+				Email:             req.Email,
+				Phone:             phone,
 			})
 			if err != nil {
 				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -96,8 +106,43 @@ func main() {
 		})
 
 		r.Post("/payments/notify", func(w http.ResponseWriter, r *http.Request) {
-			body, _ := readBodyString(r)
-			log.Printf("octo notify: %s", body)
+			var cb octoNotifyCallback
+			if err := json.NewDecoder(r.Body).Decode(&cb); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+				return
+			}
+
+			if cb.ShopTransactionID == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing shop_transaction_id"})
+				return
+			}
+
+			if cb.PaymentUUID == "" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "missing octo_payment_UUID"})
+				return
+			}
+
+			if !verifyOctoCallbackSignature(cfg.OctoUniqueKey, cb.PaymentUUID, cb.Status, cb.Signature, cb.HashKey) {
+				log.Printf("octo notify invalid signature shopTx=%s paymentUUID=%s status=%s", cb.ShopTransactionID, cb.PaymentUUID, cb.Status)
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_signature"})
+				return
+			}
+
+			verifiedStatus, err := provider.CheckStatus(r.Context(), cb.ShopTransactionID)
+			if err != nil {
+				log.Printf("octo notify status check failed shopTx=%s paymentUUID=%s status=%s err=%v", cb.ShopTransactionID, cb.PaymentUUID, cb.Status, err)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "status_check_failed"})
+				return
+			}
+
+			log.Printf(
+				"octo notify ok shopTx=%s paymentUUID=%s status=%s verifiedStatus=%s",
+				cb.ShopTransactionID,
+				cb.PaymentUUID,
+				cb.Status,
+				verifiedStatus,
+			)
+
 			writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 		})
 	})

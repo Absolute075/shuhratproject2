@@ -11,6 +11,7 @@ type Config struct {
 	FrontendURL     string
 	OctoShopID      int
 	OctoSecret      string
+	OctoUniqueKey   string
 	OctoTest        bool
 	OctoCurrency    string
 	OctoLanguage    string
@@ -33,6 +34,7 @@ func LoadConfig() Config {
 		FrontendURL:     frontendURL,
 		OctoShopID:      envIntOrDefault("OCTO_SHOP_ID", 0),
 		OctoSecret:      envOrDefault("OCTO_SECRET", ""),
+		OctoUniqueKey:   envOrDefault("OCTO_UNIQUE_KEY", ""),
 		OctoTest:        envBoolOrDefault("OCTO_TEST", false),
 		OctoCurrency:    envOrDefault("OCTO_CURRENCY", "USD"),
 		OctoLanguage:    envOrDefault("OCTO_LANGUAGE", "en"),

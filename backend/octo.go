@@ -3,11 +3,14 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -100,12 +103,13 @@ type octoPreparePaymentResponse struct {
 }
 
 type createPaymentRequest struct {
-	Amount      float64 `json:"amount"`
-	Currency    string  `json:"currency"`
-	Description string  `json:"description"`
-	FullName    string  `json:"fullName"`
-	Email       string  `json:"email"`
-	Phone       string  `json:"phone"`
+	ShopTransactionID string  `json:"shopTransactionId"`
+	Amount            float64 `json:"amount"`
+	Currency          string  `json:"currency"`
+	Description       string  `json:"description"`
+	FullName          string  `json:"fullName"`
+	Email             string  `json:"email"`
+	Phone             string  `json:"phone"`
 }
 
 type createPaymentResponse struct {
@@ -128,7 +132,10 @@ func (p *OctoProvider) CreatePayment(ctx context.Context, req createPaymentReque
 		currency = p.currency
 	}
 
-	shopTx := uuid.NewString()
+	shopTx := strings.TrimSpace(req.ShopTransactionID)
+	if shopTx == "" {
+		shopTx = uuid.NewString()
+	}
 
 	payload := octoPreparePaymentRequest{
 		OctoShopID:        p.shopID,
@@ -217,6 +224,87 @@ func (p *OctoProvider) CreatePayment(ctx context.Context, req createPaymentReque
 		RedirectURL: payURL,
 		Status:      status,
 	}, nil
+}
+
+type octoCheckStatusRequest struct {
+	OctoShopID        int    `json:"octo_shop_id"`
+	OctoSecret        string `json:"octo_secret"`
+	ShopTransactionID string `json:"shop_transaction_id"`
+}
+
+func (p *OctoProvider) CheckStatus(ctx context.Context, shopTransactionID string) (string, error) {
+	if p.shopID == 0 || p.secret == "" {
+		return "", errors.New("octo is not configured")
+	}
+	if strings.TrimSpace(shopTransactionID) == "" {
+		return "", errors.New("shop_transaction_id missing")
+	}
+
+	payload := octoCheckStatusRequest{
+		OctoShopID:        p.shopID,
+		OctoSecret:        p.secret,
+		ShopTransactionID: shopTransactionID,
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("marshal payload: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, octoPreparePaymentURL, bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	httpResp, err := p.client.Do(httpReq)
+	if err != nil {
+		return "", fmt.Errorf("octo request failed: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	var resp octoPreparePaymentResponse
+	if err := json.NewDecoder(httpResp.Body).Decode(&resp); err != nil {
+		return "", fmt.Errorf("decode octo response: %w", err)
+	}
+
+	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
+		msg := resp.ErrMessage
+		if msg == "" {
+			msg = httpResp.Status
+		}
+		return "", fmt.Errorf("octo http error: %s", msg)
+	}
+
+	if resp.Error != 0 {
+		msg := resp.ErrMessage
+		if msg == "" {
+			msg = "octo error"
+		}
+		return "", fmt.Errorf("octo error: %s", msg)
+	}
+
+	st := resp.Status
+	if resp.Data != nil && resp.Data.Status != "" {
+		st = resp.Data.Status
+	}
+	if strings.TrimSpace(st) == "" {
+		return "", errors.New("status missing")
+	}
+	return st, nil
+}
+
+func expectedOctoCallbackSignature(uniqueKey, uuid, status string) string {
+	h := sha1.Sum([]byte(uniqueKey + uuid + status))
+	return strings.ToUpper(hex.EncodeToString(h[:]))
+}
+
+func verifyOctoCallbackSignature(uniqueKey, uuid, status, signature, hashKey string) bool {
+	if strings.TrimSpace(uniqueKey) == "" {
+		return true
+	}
+	expected := expectedOctoCallbackSignature(uniqueKey, uuid, status)
+	return strings.EqualFold(strings.TrimSpace(signature), expected) || strings.EqualFold(strings.TrimSpace(hashKey), expected)
 }
 
 var nonDigits = regexp.MustCompile(`\D+`)
