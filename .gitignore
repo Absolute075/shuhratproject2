@@ -19,6 +19,7 @@ frontend/.env.*
 
 backend/bin/
 backend/*.exe
+backend/data/
 backend/.env
 backend/.env.*
 !backend/.env.example

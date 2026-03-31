@@ -29,6 +29,11 @@ func main() {
 	_ = godotenv.Load()
 	cfg := LoadConfig()
 	provider := NewOctoProvider(cfg)
+	store, err := NewApplicationStore(cfg.ApplicationStorePath)
+	if err != nil {
+		log.Fatalf("application store init error: %v", err)
+	}
+	notifier := NewTelegramNotifier(cfg)
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
@@ -81,6 +86,11 @@ func main() {
 			applicationID := uuid.NewString()
 			phone := digitsOnly(req.PhoneCountryDial) + digitsOnly(req.PhoneNumber)
 
+			if err := store.Create(applicationID, req); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed_to_store_application"})
+				return
+			}
+
 			paymentResp, err := provider.CreatePayment(r.Context(), createPaymentRequest{
 				ShopTransactionID: applicationID,
 				Amount:            cfg.ApplicationFee,
@@ -92,6 +102,11 @@ func main() {
 			})
 			if err != nil {
 				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+
+			if _, err := store.UpdatePayment(applicationID, paymentResp.PaymentID, paymentResp.Status); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed_to_update_application_payment"})
 				return
 			}
 
@@ -133,6 +148,27 @@ func main() {
 				log.Printf("octo notify status check failed shopTx=%s paymentUUID=%s status=%s err=%v", cb.ShopTransactionID, cb.PaymentUUID, cb.Status, err)
 				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "status_check_failed"})
 				return
+			}
+
+			record, err := store.UpdatePayment(cb.ShopTransactionID, cb.PaymentUUID, verifiedStatus)
+			if err != nil {
+				log.Printf("octo notify application update failed shopTx=%s paymentUUID=%s status=%s err=%v", cb.ShopTransactionID, cb.PaymentUUID, verifiedStatus, err)
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "application_update_failed"})
+				return
+			}
+
+			if isSuccessfulPaymentStatus(verifiedStatus) && !record.TelegramNotified {
+				if err := notifier.SendPaidApplication(r.Context(), record); err != nil {
+					log.Printf("telegram send failed applicationID=%s paymentUUID=%s err=%v", cb.ShopTransactionID, cb.PaymentUUID, err)
+					writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "telegram_send_failed"})
+					return
+				}
+
+				if err := store.MarkTelegramNotified(cb.ShopTransactionID); err != nil {
+					log.Printf("telegram notify flag update failed applicationID=%s err=%v", cb.ShopTransactionID, err)
+					writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "telegram_flag_update_failed"})
+					return
+				}
 			}
 
 			log.Printf(
