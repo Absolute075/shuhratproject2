@@ -189,18 +189,6 @@ export function ApplyFormInner({ showPaymentReturn = true }: ApplyFormInnerProps
 
   return (
     <div className="eimun-form">
-      {/* ── Header card ── */}
-      <div className="ef-card">
-        <div className="ef-subtitle">EIMUN 2026</div>
-        <div className="ef-title">Application Form</div>
-        <div className="ef-subtitle" style={{ marginTop: 8 }}>
-          Application fee: <strong style={{ color: '#0f172a' }}>$20 USD</strong>
-        </div>
-        <div className="ef-info">
-          After submitting the form, you will be redirected to the secure Octo payment page.
-        </div>
-      </div>
-
       {/* ── Payment return status ── */}
       {showPaymentReturn && (returnedPaymentId || returnedStatus) && (
         <div className="ef-card">

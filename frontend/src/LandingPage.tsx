@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { type MouseEvent, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ApplyFormInner } from './App'
 
@@ -10,7 +10,6 @@ type FundingOption = {
     srcSet: string
   }
   items: string[]
-  ctaTextClassName?: string
 }
 
 const LOGO_URL =
@@ -31,7 +30,6 @@ const FUNDING_OPTIONS: FundingOption[] = [
       'Certificate of Participation',
       'City Travel',
     ],
-    ctaTextClassName: 'text-block',
   },
   {
     title: 'Partial Funded',
@@ -48,7 +46,6 @@ const FUNDING_OPTIONS: FundingOption[] = [
       'Certificate of Participation',
       'City Travel',
     ],
-    ctaTextClassName: 'text-block-2',
   },
   {
     title: 'Self Funded',
@@ -65,7 +62,6 @@ const FUNDING_OPTIONS: FundingOption[] = [
       'Certificate of Participation',
       'City Travel',
     ],
-    ctaTextClassName: undefined,
   },
 ]
 
@@ -82,59 +78,66 @@ function ArrowIcon() {
   )
 }
 
-function ApplyNowArrowLink({ textClassName }: { textClassName?: string }) {
+function scrollToApplySection() {
+  const section = document.getElementById('apply-section')
+  if (!section) return
+
+  const top = section.getBoundingClientRect().top + window.scrollY - 48
+  window.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
+}
+
+function ApplyNowArrowLink() {
   return (
-    <a href="#apply-section" className="text-link-arrow w-inline-block">
-      {textClassName ? (
-        <div className={textClassName}>
-          <strong>Apply now</strong>
-        </div>
-      ) : (
-        <div>
-          <strong className="bold-text-3">Apply now</strong>
-        </div>
-      )}
-      <div className="arrow-embed w-embed">
+    <a
+      href="#apply-section"
+      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+        event.preventDefault()
+        scrollToApplySection()
+      }}
+      className="inline-flex items-center gap-2 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
+    >
+      <span>Apply now</span>
+      <span className="flex h-5 w-5 items-center justify-center text-white">
         <ArrowIcon />
-      </div>
+      </span>
     </a>
   )
 }
 
 function FundingSlide({ option }: { option: FundingOption }) {
   return (
-    <div className="team-slide-wrapper w-slide">
-      <div className="team-block">
-        <img
-          src={option.image.src}
-          loading="lazy"
-          sizes="(max-width: 600px) 100vw, 600px"
-          srcSet={option.image.srcSet}
-          alt=""
-          className="team-member-image-two"
-        />
-        <div className="team-block-info">
-          <h3 className="team-member-name-two text-black">{option.title}</h3>
-          <p className="team-member-text">
-            {option.priceText ? (
-              <>
-                <strong>{option.priceText}</strong>
-                <br />
-              </>
-            ) : (
+    <article className="min-w-[280px] snap-center overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm md:min-w-0">
+      <img
+        src={option.image.src}
+        loading="lazy"
+        sizes="(max-width: 768px) 280px, (max-width: 1200px) 33vw, 360px"
+        srcSet={option.image.srcSet}
+        alt=""
+        className="h-56 w-full object-cover"
+      />
+      <div className="flex min-h-[320px] flex-col p-6">
+        <h3 className="text-2xl font-extrabold text-black">{option.title}</h3>
+        <p className="mt-4 text-base leading-7 text-slate-700">
+          {option.priceText ? (
+            <>
+              <strong>{option.priceText}</strong>
               <br />
-            )}
-            {option.items.map((item) => (
-              <span key={item}>
-                - {item}
-                <br />
-              </span>
-            ))}
-          </p>
-          <ApplyNowArrowLink textClassName={option.ctaTextClassName} />
+            </>
+          ) : (
+            <br />
+          )}
+          {option.items.map((item) => (
+            <span key={item}>
+              - {item}
+              <br />
+            </span>
+          ))}
+        </p>
+        <div className="mt-auto pt-6">
+          <ApplyNowArrowLink />
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 
@@ -152,7 +155,7 @@ export default function LandingPage() {
     if (!shouldScroll) return
 
     const t = window.setTimeout(() => {
-      document.getElementById('apply-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      scrollToApplySection()
     }, 50)
 
     return () => window.clearTimeout(t)
@@ -195,8 +198,11 @@ export default function LandingPage() {
               </div>
               <div className="mt-3">
                 <div className="inline-block rounded-2xl bg-black px-4 py-2 text-white">
-                  <span className="font-semibold text-white no-underline">📍 Tashkent, Uzbekistan - 🗓 May 2026</span>
+                  <span className="font-semibold text-white no-underline"> Tashkent, Uzbekistan - May 2026</span>
                 </div>
+              </div>
+              <div className="mt-6">
+                <ApplyNowArrowLink />
               </div>
             </div>
           </div>
@@ -205,10 +211,10 @@ export default function LandingPage() {
         <section className="container">
           <div className="main-heading-wrap">
             <h1 className="heading text-4xl font-extrabold">Conference Overview</h1>
-            <div className="divider" />
+            <div className="divider mt-4" />
             <p
               id="w-node-_56f2b96e-ae6e-7af1-6a3b-a2d7387904db-8917cbc5"
-              className="paragraph-light"
+              className="paragraph-light mt-6"
             >
               <strong>• Conference:</strong> Eurasian International Model United Nations (EIMUN)
               <br />
@@ -221,10 +227,9 @@ export default function LandingPage() {
               <strong>• Participants:</strong> International students and youth delegates
             </p>
 
-            <h1 className="heading text-4xl font-extrabold">What you get with EIMUN</h1>
-            <div className="divider" />
-            <div className="divider" />
-            <p className="paragraph-light">
+            <h1 className="heading mt-14 text-4xl font-extrabold">What you get with EIMUN</h1>
+            <div className="divider mt-4" />
+            <p className="paragraph-light mt-6">
               • International exposure
               <br />
               • Academic &amp; professional certificates
@@ -248,32 +253,10 @@ export default function LandingPage() {
           <section className="team-slider">
             <div className="container-2">
               <h2 className="centered-heading text-4xl font-extrabold">FUNDING OPTIONS</h2>
-              <div
-                data-delay="4000"
-                data-animation="slide"
-                className="team-slider-wrapper w-slider"
-                data-autoplay="false"
-                data-easing="ease"
-                data-hide-arrows="false"
-                data-disable-swipe="false"
-                data-autoplay-limit="0"
-                data-nav-spacing="12"
-                data-duration="500"
-                data-infinite="true"
-              >
-                <div className="w-slider-mask">
-                  {FUNDING_OPTIONS.map((option) => (
-                    <FundingSlide key={option.title} option={option} />
-                  ))}
-                </div>
-
-                <div className="team-slider-arrow w-slider-arrow-left">
-                  <div className="w-icon-slider-left" />
-                </div>
-                <div className="team-slider-arrow w-slider-arrow-right">
-                  <div className="w-icon-slider-right" />
-                </div>
-                <div className="team-slider-nav w-slider-nav w-slider-nav-invert w-round" />
+              <div className="mt-10 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 md:grid md:grid-cols-3 md:gap-8 md:overflow-visible md:pb-0">
+                {FUNDING_OPTIONS.map((option) => (
+                  <FundingSlide key={option.title} option={option} />
+                ))}
               </div>
             </div>
           </section>
@@ -293,8 +276,8 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-4xl px-6 text-center">
           <h1 className="heading text-5xl font-extrabold text-center">About</h1>
-          <div className="divider" />
-          <p className="paragraph-light text-center">
+          <div className="divider mt-4" />
+          <p className="paragraph-light mt-6 text-left leading-7 md:text-center">
             EIMUN 2026 is an international Model United Nations conference taking place in May 2026
             in Tashkent, Uzbekistan. The conference focuses on Global Challenges and Sustainable
             Development, providing a platform for youth to engage in diplomacy, debate, and
@@ -314,25 +297,25 @@ export default function LandingPage() {
           </p>
 
           <h1 className="heading mt-14 text-5xl font-extrabold text-center">Eligibility &amp; Requirements</h1>
-          <div className="divider" />
-          <div className="paragraph-light text-center">
-            <div className="text-2xl font-extrabold">Who Can Apply?</div>
+          <div className="divider mt-4" />
+          <div className="paragraph-light mt-6 text-left leading-7 md:text-center">
+            <div className="text-2xl font-extrabold text-left md:text-center">Who Can Apply?</div>
             <div className="mt-3">
               EIMUN 2026 welcomes motivated and responsible young individuals who are interested in
               international relations, diplomacy, and global development. To be eligible, applicants
               must meet the following requirements:
             </div>
 
-            <div className="mt-8 text-2xl font-extrabold">1. Age Requirement</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">1. Age Requirement</div>
             <div className="mt-3">Applicants must be between 16 and 30 years old at the time of the conference.</div>
 
-            <div className="mt-8 text-2xl font-extrabold">2. Language Proficiency</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">2. Language Proficiency</div>
             <div className="mt-3">
               Participants must have basic to intermediate proficiency in English, as all sessions and
               committee discussions will be conducted in English.
             </div>
 
-            <div className="mt-8 text-2xl font-extrabold">3. Academic or Professional Background</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">3. Academic or Professional Background</div>
             <div className="mt-3">
               Applicants can be:
               <br />
@@ -347,7 +330,7 @@ export default function LandingPage() {
               Previous MUN experience is not required, but is considered an advantage.
             </div>
 
-            <div className="mt-8 text-2xl font-extrabold">4. Commitment &amp; Professional Conduct</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">4. Commitment &amp; Professional Conduct</div>
             <div className="mt-3">
               Participants must:
               <br />
@@ -360,7 +343,7 @@ export default function LandingPage() {
               • Maintain professional behavior throughout the event
             </div>
 
-            <div className="mt-8 text-2xl font-extrabold">5. Application &amp; Fee</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">5. Application &amp; Fee</div>
             <div className="mt-3">
               All applicants must:
               <br />
@@ -369,7 +352,7 @@ export default function LandingPage() {
               • Pay the $20 non-refundable application fee
             </div>
 
-            <div className="mt-8 text-2xl font-extrabold">6. Travel &amp; Documentation</div>
+            <div className="mt-8 text-2xl font-extrabold text-left md:text-center">6. Travel &amp; Documentation</div>
             <div className="mt-3">
               International participants are responsible for:
               <br />
@@ -432,7 +415,7 @@ export default function LandingPage() {
 
       </main>
 
-      <section id="apply-section" style={{ padding: '40px 24px' }}>
+      <section id="apply-section" style={{ padding: '40px 24px', scrollMarginTop: '48px' }}>
         <ApplyFormInner />
       </section>
 
