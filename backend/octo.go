@@ -155,7 +155,7 @@ func (p *OctoProvider) CreatePayment(ctx context.Context, req createPaymentReque
 		Basket: []octoBasketItem{
 			{PositionDesc: req.Description, Count: 1, Price: req.Amount},
 		},
-		PaymentMethods: []octoPaymentMethod{{Method: "bank_card"}, {Method: "uzcard"}, {Method: "humo"}},
+		PaymentMethods: octoPaymentMethods(currency),
 		ReturnURL:      p.returnURL,
 		NotifyURL:      p.notifyURL,
 		Language:       p.language,
@@ -305,6 +305,14 @@ func verifyOctoCallbackSignature(uniqueKey, uuid, status, signature, hashKey str
 	}
 	expected := expectedOctoCallbackSignature(uniqueKey, uuid, status)
 	return strings.EqualFold(strings.TrimSpace(signature), expected) || strings.EqualFold(strings.TrimSpace(hashKey), expected)
+}
+
+func octoPaymentMethods(currency string) []octoPaymentMethod {
+	methods := []octoPaymentMethod{{Method: "bank_card"}}
+	if strings.EqualFold(strings.TrimSpace(currency), "UZS") {
+		methods = append(methods, octoPaymentMethod{Method: "uzcard"}, octoPaymentMethod{Method: "humo"})
+	}
+	return methods
 }
 
 var nonDigits = regexp.MustCompile(`\D+`)
