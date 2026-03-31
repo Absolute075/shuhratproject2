@@ -84,7 +84,7 @@ function ArrowIcon() {
 
 function ApplyNowArrowLink({ textClassName }: { textClassName?: string }) {
   return (
-    <Link to="/apply" className="text-link-arrow w-inline-block">
+    <a href="#apply-section" className="text-link-arrow w-inline-block">
       {textClassName ? (
         <div className={textClassName}>
           <strong>Apply now</strong>
@@ -97,7 +97,7 @@ function ApplyNowArrowLink({ textClassName }: { textClassName?: string }) {
       <div className="arrow-embed w-embed">
         <ArrowIcon />
       </div>
-    </Link>
+    </a>
   )
 }
 
@@ -142,14 +142,21 @@ export default function LandingPage() {
   const location = useLocation()
 
   useEffect(() => {
-    if (location.pathname !== '/apply') return
+    const params = new URLSearchParams(location.search)
+    const shouldScroll =
+      location.pathname === '/apply' ||
+      location.hash === '#apply-section' ||
+      params.has('paymentId') ||
+      params.has('status')
+
+    if (!shouldScroll) return
 
     const t = window.setTimeout(() => {
       document.getElementById('apply-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 50)
 
     return () => window.clearTimeout(t)
-  }, [location.pathname])
+  }, [location.hash, location.pathname, location.search])
 
   return (
     <div>
@@ -163,11 +170,7 @@ export default function LandingPage() {
         className="navbar w-nav"
       >
         <div className="container-5 w-container">
-          <nav role="navigation" className="w-nav-menu">
-            <Link to="/apply" className="primary-button w-button">
-              Apply now
-            </Link>
-          </nav>
+          <nav role="navigation" className="w-nav-menu" />
           <div className="w-nav-button">
             <div className="w-icon-nav-menu" />
           </div>
@@ -183,20 +186,19 @@ export default function LandingPage() {
                 EIMUN 2026
                 <br />
               </div>
-              <div className="paragraph-bigger cc-bigger-light">
-                <div className="inline-block rounded-2xl bg-black/60 px-4 py-2 text-white">
-                  <strong className="bold-text text-white">Global challenges &amp; Sustainable Development</strong>
+              <div>
+                <div className="inline-block rounded-2xl bg-black px-4 py-2 text-white">
+                  <span className="font-semibold text-white no-underline">
+                    Global challenges &amp; Sustainable Development
+                  </span>
                 </div>
               </div>
-              <div className="paragraph-bigger cc-bigger-light">
-                <div className="inline-block rounded-2xl bg-black/60 px-4 py-2 text-white">
-                  <strong className="text-white">📍 Tashkent, Uzbekistan - 🗓 May 2026</strong>
+              <div className="mt-3">
+                <div className="inline-block rounded-2xl bg-black px-4 py-2 text-white">
+                  <span className="font-semibold text-white no-underline">📍 Tashkent, Uzbekistan - 🗓 May 2026</span>
                 </div>
               </div>
             </div>
-            <Link to="/apply" className="w-inline-block rounded-full bg-black px-8 py-3 text-white">
-              <div className="font-semibold">Apply now</div>
-            </Link>
           </div>
         </section>
 
@@ -237,18 +239,10 @@ export default function LandingPage() {
         </section>
 
         <section className="container">
-          <div className="products-heading">
-            <div
-              id="w-node-_2a24a47e-bcf5-d5d7-0359-e9656b835fdf-8917cbc5"
-              className="w-layout-layout wf-layout-layout"
-            >
-              <div className="w-layout-cell" />
-            </div>
-            <div className="paragraph-bigger cc-bigger-light">
-              <span className="inline-block rounded-full bg-black px-4 py-2 text-white">
-                Tashkent, Uzbekistan - May, 2026
-              </span>
-            </div>
+          <div className="text-center">
+            <span className="inline-block rounded-full bg-black px-4 py-2 font-semibold text-white no-underline">
+              Tashkent, Uzbekistan - May, 2026
+            </span>
           </div>
 
           <section className="team-slider">
@@ -286,9 +280,9 @@ export default function LandingPage() {
         </section>
 
         <div className="divider" />
-        <div className="flex justify-center">
+        <div className="flex justify-center px-6">
           <img
-            className="mx-auto"
+            className="mx-auto block w-full max-w-[1200px]"
             src="https://cdn.prod.website-files.com/697f81cd3f55ea918917cb63/69807936720ea849f553de4e_international-student-flags.jpg"
             loading="lazy"
             sizes="(max-width: 1200px) 100vw, 1200px"
@@ -298,7 +292,7 @@ export default function LandingPage() {
         </div>
 
         <section className="mx-auto max-w-4xl px-6 text-center">
-          <h1 className="heading text-4xl font-extrabold">About</h1>
+          <h1 className="heading text-5xl font-extrabold text-center">About</h1>
           <div className="divider" />
           <p className="paragraph-light text-center">
             EIMUN 2026 is an international Model United Nations conference taking place in May 2026
@@ -319,76 +313,128 @@ export default function LandingPage() {
             -50 Self Funded
           </p>
 
-          <h1 className="heading text-4xl font-extrabold">Eligibility &amp; Requirements</h1>
+          <h1 className="heading mt-14 text-5xl font-extrabold text-center">Eligibility &amp; Requirements</h1>
           <div className="divider" />
-          <p className="paragraph-light text-center">
-            <strong>Who Can Apply?</strong>
-            <br />
-            EIMUN 2026 welcomes motivated and responsible young individuals who are interested in
-            international relations, diplomacy, and global development. To be eligible, applicants
-            must meet the following requirements:
-            <br />
-            <strong>1. Age Requirement</strong>
-            <br />
-            Applicants must be between 16 and 30 years old at the time of the conference.
-            <br />
-            <strong>2. Language Proficiency</strong>
-            <br />
-            Participants must have basic to intermediate proficiency in English, as all sessions and
-            committee discussions will be conducted in English.
-            <br />
-            <strong>3. Academic or Professional Background</strong>
-            <br />
-            Applicants can be:
-            <br />
-            • High school students
-            <br />
-            • University students
-            <br />
-            • Recent graduates
-            <br />
-            • Young professionals interested in global affairs
-            <br />
-            Previous MUN experience is not required, but is considered an advantage.
-            <br />
-            <strong>4. Commitment &amp; Professional Conduct</strong>
-            <br />
-            Participants must:
-            <br />
-            • Attend all scheduled sessions
-            <br />
-            • Respect other delegates and organizers
-            <br />
-            • Follow conference rules and local laws
-            <br />
-            • Maintain professional behavior throughout the event
-            <br />
-            <strong>5. Application &amp; Fee</strong>
-            <br />
-            All applicants must:
-            <br />
-            • Complete the official online application form
-            <br />
-            • Pay the $20 non-refundable application fee
-            <br />
-            <strong>6. Travel &amp; Documentation</strong>
-            <br />
-            International participants are responsible for:
-            <br />
-            • Valid passport
-            <br />
-            • Visa requirements (if applicable)
-            <br />
-            • Travel arrangements
-            <br />
-            Official invitation letters will be provided to accepted participants upon request.
-          </p>
+          <div className="paragraph-light text-center">
+            <div className="text-2xl font-extrabold">Who Can Apply?</div>
+            <div className="mt-3">
+              EIMUN 2026 welcomes motivated and responsible young individuals who are interested in
+              international relations, diplomacy, and global development. To be eligible, applicants
+              must meet the following requirements:
+            </div>
+
+            <div className="mt-8 text-2xl font-extrabold">1. Age Requirement</div>
+            <div className="mt-3">Applicants must be between 16 and 30 years old at the time of the conference.</div>
+
+            <div className="mt-8 text-2xl font-extrabold">2. Language Proficiency</div>
+            <div className="mt-3">
+              Participants must have basic to intermediate proficiency in English, as all sessions and
+              committee discussions will be conducted in English.
+            </div>
+
+            <div className="mt-8 text-2xl font-extrabold">3. Academic or Professional Background</div>
+            <div className="mt-3">
+              Applicants can be:
+              <br />
+              • High school students
+              <br />
+              • University students
+              <br />
+              • Recent graduates
+              <br />
+              • Young professionals interested in global affairs
+              <br />
+              Previous MUN experience is not required, but is considered an advantage.
+            </div>
+
+            <div className="mt-8 text-2xl font-extrabold">4. Commitment &amp; Professional Conduct</div>
+            <div className="mt-3">
+              Participants must:
+              <br />
+              • Attend all scheduled sessions
+              <br />
+              • Respect other delegates and organizers
+              <br />
+              • Follow conference rules and local laws
+              <br />
+              • Maintain professional behavior throughout the event
+            </div>
+
+            <div className="mt-8 text-2xl font-extrabold">5. Application &amp; Fee</div>
+            <div className="mt-3">
+              All applicants must:
+              <br />
+              • Complete the official online application form
+              <br />
+              • Pay the $20 non-refundable application fee
+            </div>
+
+            <div className="mt-8 text-2xl font-extrabold">6. Travel &amp; Documentation</div>
+            <div className="mt-3">
+              International participants are responsible for:
+              <br />
+              • Valid passport
+              <br />
+              • Visa requirements (if applicable)
+              <br />
+              • Travel arrangements
+              <br />
+              Official invitation letters will be provided to accepted participants upon request.
+            </div>
+          </div>
         </section>
 
-        <section id="apply-section" className="mx-auto max-w-4xl px-6 py-12">
-          <ApplyFormInner />
+        <section className="section cc-subscribe-form">
+          <div className="container cc-subscription-form">
+            <div className="heading-jumbo-small">Newsletter</div>
+            <div className="paragraph-light cc-subscribe-paragraph">Sign up to receive updates.</div>
+            <div className="form-block w-form">
+              <form
+                id="wf-form-Monthly-Newsletter-Form"
+                name="wf-form-Monthly-Newsletter-Form"
+                data-name="Monthly Newsletter Form"
+                method="get"
+                className="subscribe-form"
+                data-wf-page-id="697f81cf3f55ea918917cbc5"
+                data-wf-element-id="2df3695a-ff87-37fa-7ac7-63d4f4891940"
+              >
+                <input
+                  className="text-field cc-subscribe-text-field w-input"
+                  maxLength={256}
+                  name="Newsletter-Email"
+                  data-name="Newsletter Email"
+                  placeholder="Enter your email"
+                  type="email"
+                  id="Newsletter-Email"
+                  required
+                />
+                <input
+                  type="submit"
+                  data-wait="Please wait..."
+                  className="primary-button w-button"
+                  value="Submit"
+                />
+              </form>
+              <div className="status-message w-form-done">
+                <div>Thank you! Your submission has been received!</div>
+              </div>
+              <div className="status-message w-form-fail">
+                <div>Oops! Something went wrong while submitting the form.</div>
+              </div>
+            </div>
+          </div>
         </section>
+
+        <p className="paragraph-2 text-center">
+          Note*: Application fee is non-refundable and it does not guarantee acceptance or any level of
+          funding. Applications without completed payment will not be reviewed.
+        </p>
+
       </main>
+
+      <section id="apply-section" style={{ padding: '40px 24px' }}>
+        <ApplyFormInner />
+      </section>
 
       <footer className="footer-dark">
         <div className="container-3">
@@ -409,53 +455,6 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
-          </div>
-
-          <div className="mt-10 text-center">
-            <div className="heading-jumbo-small"> Newsletter</div>
-            <div className="paragraph-light cc-subscribe-paragraph">Sign up to receive updates.</div>
-            <div className="form-block w-form">
-              <form
-                id="wf-form-Monthly-Newsletter-Form"
-                name="wf-form-Monthly-Newsletter-Form"
-                data-name="Monthly Newsletter Form"
-                method="get"
-                className="subscribe-form"
-                data-wf-page-id="697f81cf3f55ea918917cbc5"
-                data-wf-element-id="2df3695a-ff87-37fa-7ac7-63d4f4891940"
-              >
-                <div className="mx-auto flex max-w-md justify-center">
-                  <input
-                    className="w-full rounded-l-full border border-white/20 bg-black/20 px-4 py-3 text-sm text-white outline-none"
-                    maxLength={256}
-                    name="Newsletter-Email"
-                    data-name="Newsletter Email"
-                    placeholder="Enter your email"
-                    type="email"
-                    id="Newsletter-Email"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    data-wait="Please wait..."
-                    className="rounded-r-full bg-white px-6 py-3 text-sm font-semibold text-black"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </form>
-              <div className="status-message w-form-done">
-                <div>Thank you! Your submission has been received!</div>
-              </div>
-              <div className="status-message w-form-fail">
-                <div>Oops! Something went wrong while submitting the form.</div>
-              </div>
-            </div>
-
-            <p className="paragraph-2 mt-8 text-center">
-              Note*: Application fee is non-refundable and it does not guarantee acceptance or any
-              level of funding. Applications without completed payment will not be reviewed.
-            </p>
           </div>
         </div>
         <div className="footer-divider" />

@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { COUNTRIES } from './countries'
-import { PRIVACY_POLICY, TERMS_AND_CONDITIONS } from './legal'
 
 type ApplicationSubmitRequest = {
   fullName: string
@@ -33,6 +33,53 @@ function digitsOnly(value: string) {
   return value.replace(/\D+/g, '')
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function humanizeApiError(value: string) {
+  switch (value) {
+    case 'terms_not_accepted':
+      return 'You must agree to the terms & conditions and privacy policy'
+    case 'missing_required_fields':
+      return 'Please fill in all required fields before continuing'
+    case 'invalid json':
+      return 'Invalid request. Please try again.'
+    default:
+      return value.replace(/_/g, ' ')
+  }
+}
+
+function getPaymentReturnMeta(status: string | null) {
+  switch ((status ?? '').toLowerCase()) {
+    case 'succeeded':
+      return {
+        title: 'Payment successful',
+        description: 'Your payment has been received and your application is now in review.',
+        statusClass: 'ef-status ef-status-success',
+      }
+    case 'created':
+      return {
+        title: 'Payment created',
+        description: 'Your payment session was created. If payment was not completed, you can submit the form again.',
+        statusClass: 'ef-status ef-status-warning',
+      }
+    case 'canceled':
+    case 'cancelled':
+      return {
+        title: 'Payment canceled',
+        description: 'The payment was canceled. You can fill the form and try again when you are ready.',
+        statusClass: 'ef-status ef-status-error',
+      }
+    default:
+      return {
+        title: 'Payment update',
+        description: 'We received a payment status update from the payment page.',
+        statusClass: 'ef-status ef-status-default',
+      }
+  }
+}
+
 async function submitApplication(payload: ApplicationSubmitRequest): Promise<ApplicationSubmitResponse> {
   const res = await fetch('/api/applications/submit', {
     method: 'POST',
@@ -43,6 +90,13 @@ async function submitApplication(payload: ApplicationSubmitRequest): Promise<App
   })
 
   if (!res.ok) {
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('application/json')) {
+      const data = (await res.json().catch(() => null)) as { error?: string } | null
+      if (data?.error) {
+        throw new Error(humanizeApiError(data.error))
+      }
+    }
     const text = await res.text()
     throw new Error(text || `HTTP ${res.status}`)
   }
@@ -73,23 +127,27 @@ export function ApplyFormInner({ showPaymentReturn = true }: ApplyFormInnerProps
   const [ambassadorCode, setAmbassadorCode] = useState('')
   const [agreed, setAgreed] = useState(false)
 
-  const feeText = useMemo(() => '$20 USD', [])
-
   const params = new URLSearchParams(window.location.search)
   const returnedPaymentId = params.get('paymentId')
   const returnedStatus = params.get('status')
+  const paymentReturnMeta = getPaymentReturnMeta(returnedStatus)
 
   const validate = () => {
     if (!fullName.trim()) return 'Full Name is required'
     if (!email.trim()) return 'Email address is required'
+    if (!isValidEmail(email.trim())) return 'Please enter a valid email address'
     if (!phoneNumber.trim()) return 'Phone number is required'
+    if (digitsOnly(phoneNumber).length < 7) return 'Please enter a valid phone number'
     if (!countryOfResidence.trim()) return 'Country of residence is required'
     if (!city.trim()) return 'City is required'
     if (!age.trim()) return 'Age is required'
+    const numericAge = Number(age)
+    if (Number.isNaN(numericAge) || numericAge < 16 || numericAge > 30) return 'Age must be between 16 and 30'
     if (!organizationName.trim()) return 'University / school / organization name is required'
     if (!participatedBefore.trim()) return 'Please answer: Have you participated in MUN conferences before?'
     if (!preferredParticipationType.trim()) return 'Preferred participation type is required'
     if (!motivation.trim()) return 'Why do you want to participate in EIMUN 2026? is required'
+    if (motivation.trim().length < 30) return 'Please provide a more detailed motivation (at least 30 characters)'
     if (!agreed) return 'You must agree to the terms & conditions and privacy policy'
     return null
   }
@@ -130,246 +188,228 @@ export function ApplyFormInner({ showPaymentReturn = true }: ApplyFormInnerProps
   }
 
   return (
-    <>
-      <header className="rounded-3xl border border-white/10 bg-white/5 p-7">
-        <div className="text-sm font-semibold text-white/70">EIMUN 2026</div>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Application Form</h1>
-        <p className="mt-3 text-sm leading-relaxed text-white/70">
-          Application fee: <span className="font-semibold text-white">{feeText}</span>
-        </p>
-      </header>
+    <div className="eimun-form">
+      {/* ── Header card ── */}
+      <div className="ef-card">
+        <div className="ef-subtitle">EIMUN 2026</div>
+        <div className="ef-title">Application Form</div>
+        <div className="ef-subtitle" style={{ marginTop: 8 }}>
+          Application fee: <strong style={{ color: '#0f172a' }}>$20 USD</strong>
+        </div>
+        <div className="ef-info">
+          After submitting the form, you will be redirected to the secure Octo payment page.
+        </div>
+      </div>
 
+      {/* ── Payment return status ── */}
       {showPaymentReturn && (returnedPaymentId || returnedStatus) && (
-        <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/80">
-          <div className="font-semibold">Payment return</div>
-          <div className="mt-2">
-            Payment ID: <span className="font-mono">{returnedPaymentId ?? '-'}</span>
-          </div>
-          <div>
-            Status: <span className="font-mono">{returnedStatus ?? '-'}</span>
+        <div className="ef-card">
+          <div className={paymentReturnMeta.statusClass}>
+            <strong>{paymentReturnMeta.title}</strong>
+            <span>{paymentReturnMeta.description}</span>
+            <div className="ef-status-meta">
+              <span>Status: {returnedStatus ?? '-'}</span>
+              <span>Payment ID: {returnedPaymentId ?? '-'}</span>
+            </div>
           </div>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-7">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="grid gap-2 sm:col-span-2">
-            <span className="text-sm font-semibold">Full Name</span>
+      {/* ── Main form ── */}
+      <form onSubmit={onSubmit} className="ef-card">
+        {/* Personal information */}
+        <div className="ef-section-title">Personal information</div>
+        <div className="ef-section-desc">Please fill in your main contact and profile details.</div>
+
+        <div className="ef-fields">
+          <div className="ef-field">
+            <span className="ef-label">Full Name</span>
             <input
+              type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
               placeholder="Your full name"
             />
-          </label>
+          </div>
 
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Email address</span>
+          <div className="ef-field">
+            <span className="ef-label">Email address</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+            />
+          </div>
+
+          <div className="ef-field">
+            <span className="ef-label">Phone number</span>
+            <div className="ef-phone-row">
+              <select
+                value={phoneCountryDial}
+                onChange={(e) => setPhoneCountryDial(e.target.value)}
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.dial}>
+                    {c.name} ({c.dial})
+                  </option>
+                ))}
+              </select>
               <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                placeholder="name@example.com"
-                type="email"
+                type="text"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(digitsOnly(e.target.value))}
+                placeholder="Digits only"
+                inputMode="numeric"
               />
-            </label>
-
-            <div className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Phone number</span>
-              <div className="grid gap-3 sm:grid-cols-[220px_1fr]">
-                <select
-                  value={phoneCountryDial}
-                  onChange={(e) => setPhoneCountryDial(e.target.value)}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                >
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.dial} className="bg-slate-900">
-                      {c.name} ({c.dial})
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(digitsOnly(e.target.value))}
-                  className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                  placeholder="Digits only"
-                  inputMode="numeric"
-                />
-              </div>
             </div>
+          </div>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Country of residence</span>
+          <div className="ef-row">
+            <div className="ef-field">
+              <span className="ef-label">Country of residence</span>
               <select
                 value={countryOfResidence}
                 onChange={(e) => setCountryOfResidence(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
               >
-                <option value="" className="bg-slate-900">
-                  Select a country
-                </option>
+                <option value="">Select a country</option>
                 {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.name} className="bg-slate-900">
+                  <option key={c.code} value={c.name}>
                     {c.name}
                   </option>
                 ))}
               </select>
-            </label>
-
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">City</span>
+            </div>
+            <div className="ef-field">
+              <span className="ef-label">City</span>
               <input
+                type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
                 placeholder="Your city"
               />
-            </label>
+            </div>
+          </div>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold">Age</span>
+          <div className="ef-row">
+            <div className="ef-field">
+              <span className="ef-label">Age</span>
               <input
+                type="text"
                 value={age}
                 onChange={(e) => setAge(digitsOnly(e.target.value))}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                placeholder="Digits only"
+                placeholder="16-30"
                 inputMode="numeric"
               />
-            </label>
-
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">University / school / organization name</span>
+            </div>
+            <div className="ef-field">
+              <span className="ef-label">Ambassador code (if any)</span>
               <input
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                placeholder="Your organization"
-              />
-            </label>
-
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Have you participated in MUN conferences before?</span>
-              <select
-                value={participatedBefore}
-                onChange={(e) => setParticipatedBefore(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-              >
-                <option value="" className="bg-slate-900">
-                  Select
-                </option>
-                <option value="yes" className="bg-slate-900">
-                  Yes
-                </option>
-                <option value="no" className="bg-slate-900">
-                  No
-                </option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Preferred participation type</span>
-              <select
-                value={preferredParticipationType}
-                onChange={(e) => setPreferredParticipationType(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-              >
-                <option value="" className="bg-slate-900">
-                  Select
-                </option>
-                <option value="delegate" className="bg-slate-900">
-                  Delegate
-                </option>
-                <option value="chair" className="bg-slate-900">
-                  Chair / President
-                </option>
-                <option value="press" className="bg-slate-900">
-                  Press
-                </option>
-                <option value="observer" className="bg-slate-900">
-                  Observer
-                </option>
-              </select>
-            </label>
-
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Why do you want to participate in EIMUN 2026?</span>
-              <textarea
-                value={motivation}
-                onChange={(e) => setMotivation(e.target.value)}
-                className="min-h-[120px] rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
-                placeholder="Tell us your motivation"
-              />
-            </label>
-
-            <label className="grid gap-2 sm:col-span-2">
-              <span className="text-sm font-semibold">Ambassador code (if any)</span>
-              <input
+                type="text"
                 value={ambassadorCode}
                 onChange={(e) => setAmbassadorCode(e.target.value)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-white/25"
                 placeholder="Optional"
               />
-            </label>
-          </div>
-
-          <div className="mt-7 rounded-2xl border border-white/10 bg-black/10 p-5">
-            <label className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-1 h-4 w-4 rounded border-white/20 bg-transparent"
-              />
-              <span className="text-sm text-white/80">
-                I agree to the terms &amp; conditions and privacy policy
-              </span>
-            </label>
-
-            <div className="mt-4 grid gap-3">
-              <details className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <summary className="cursor-pointer text-sm font-semibold">📄 TERMS &amp; CONDITIONS</summary>
-                <div className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-white/70">
-                  {TERMS_AND_CONDITIONS}
-                </div>
-              </details>
-              <details className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <summary className="cursor-pointer text-sm font-semibold">🔐 PRIVACY POLICY</summary>
-                <div className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-white/70">
-                  {PRIVACY_POLICY}
-                </div>
-              </details>
             </div>
           </div>
 
-          {error && (
-            <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              {error}
-            </div>
-          )}
+          <div className="ef-field">
+            <span className="ef-label">University / school / organization name</span>
+            <input
+              type="text"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              placeholder="Your organization"
+            />
+          </div>
+        </div>
+
+        {/* Application details */}
+        <div className="ef-section-title" style={{ marginTop: 28 }}>Application details</div>
+        <div className="ef-section-desc">Tell us about your participation and motivation.</div>
+
+        <div className="ef-fields">
+          <div className="ef-field">
+            <span className="ef-label">Have you participated in MUN conferences before?</span>
+            <select
+              value={participatedBefore}
+              onChange={(e) => setParticipatedBefore(e.target.value)}
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+
+          <div className="ef-field">
+            <span className="ef-label">Preferred participation type</span>
+            <select
+              value={preferredParticipationType}
+              onChange={(e) => setPreferredParticipationType(e.target.value)}
+            >
+              <option value="">Select</option>
+              <option value="delegate">Delegate</option>
+              <option value="chair">Chair / President</option>
+              <option value="press">Press</option>
+              <option value="observer">Observer</option>
+            </select>
+          </div>
+
+          <div className="ef-field">
+            <span className="ef-label">Why do you want to participate in EIMUN 2026?</span>
+            <textarea
+              value={motivation}
+              onChange={(e) => setMotivation(e.target.value)}
+              placeholder="Tell us why you want to join EIMUN 2026"
+            />
+          </div>
+        </div>
+
+        {/* Agreement */}
+        <div className="ef-agreement" style={{ marginTop: 24 }}>
+          <label className="ef-check-label">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+            />
+            <span className="ef-check-text">
+              I agree to the{' '}
+              <Link to="/terms-conditions">Terms &amp; Conditions</Link>{' '}
+              and{' '}
+              <Link to="/privacy-policy">Privacy Policy</Link>.
+            </span>
+          </label>
+          <div className="ef-agreement-note">
+            Make sure all details are correct before continuing to the Octo payment page.
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && <div className="ef-error" style={{ marginTop: 16 }}>{error}</div>}
+
+        {/* Hint + submit */}
+        <div className="ef-hint" style={{ marginTop: 20 }}>
+          By clicking submit, you will be redirected to Octo to complete the application fee payment.
+        </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-6 w-full rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90 disabled:opacity-60"
+          className="ef-submit"
+          style={{ marginTop: 12 }}
         >
-          {loading ? 'Submitting…' : 'Submit application and pay'}
+          {loading ? 'Creating payment session...' : 'Submit application and continue to payment'}
         </button>
       </form>
-    </>
+    </div>
   )
 }
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#0b1220] text-gray-200">
-      <div className="mx-auto max-w-4xl px-6 py-10">
-        <ApplyFormInner />
-
-        <footer className="mt-10 text-center text-xs text-white/45">
-          Frontend: http://localhost:5173 · Backend: http://localhost:8080
-        </footer>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#f1f5f9', padding: '40px 16px' }}>
+      <ApplyFormInner />
     </div>
   )
 }
