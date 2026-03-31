@@ -336,10 +336,9 @@ export function ApplyFormInner({ showPaymentReturn = true }: ApplyFormInnerProps
               onChange={(e) => setPreferredParticipationType(e.target.value)}
             >
               <option value="">Select</option>
-              <option value="delegate">Delegate</option>
-              <option value="chair">Chair / President</option>
-              <option value="press">Press</option>
-              <option value="observer">Observer</option>
+              <option value="fully funded">Fully Funded</option>
+              <option value="partial funded">Partial Funded</option>
+              <option value="self funded">Self Funded</option>
             </select>
           </div>
 
