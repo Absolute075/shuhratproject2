@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -26,7 +27,7 @@ type healthResponse struct {
 
 func main() {
 	_ = loadDotEnv(".env")
-	_ = loadDotEnv("../.env")
+	_ = loadDotEnv("backend/.env")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -36,6 +37,15 @@ func main() {
 	distDir := os.Getenv("FRONTEND_DIST")
 	if distDir == "" {
 		distDir = filepath.FromSlash("../frontend/dist")
+	}
+
+	storeBase := strings.TrimSpace(os.Getenv("APPLICATION_STORE_PATH"))
+	if storeBase == "" {
+		storeBase = "store"
+	}
+	store := newTransactionStore(storeBase)
+	if err := store.Init(); err != nil {
+		log.Printf("transaction store init error: %v", err)
 	}
 
 	mux := http.NewServeMux()
@@ -72,6 +82,9 @@ func main() {
 			}
 		}
 
+		if cb.ShopTransactionID != "" {
+			_ = store.UpdateFromCallback(cb)
+		}
 		log.Printf("octo notify: shop_transaction_id=%s uuid=%s status=%s", cb.ShopTransactionID, cb.OctoPaymentUUID, cb.Status)
 		w.WriteHeader(http.StatusNoContent)
 	}
@@ -104,16 +117,34 @@ func main() {
 			return
 		}
 
-		if req.TotalSum <= 0 {
-			http.Error(w, "total_sum must be > 0", http.StatusBadRequest)
-			return
-		}
+		planID := strings.ToLower(strings.TrimSpace(req.PlanID))
+		planName, amount, ok := amountForPlanID(planID)
+		if !ok {
+			// Backward-compatible fallback: accept only whitelisted amounts.
+			if req.TotalSum <= 0 {
+				http.Error(w, "plan_id is required", http.StatusBadRequest)
+				return
+			}
 
-		allowed := map[int]bool{249: true, 499: true, 899: true}
-		rounded := int(math.Round(req.TotalSum))
-		if !allowed[rounded] || math.Abs(req.TotalSum-float64(rounded)) > 0.0001 {
-			http.Error(w, "invalid plan amount", http.StatusBadRequest)
-			return
+			allowed := map[int]bool{249: true, 499: true, 899: true}
+			rounded := int(math.Round(req.TotalSum))
+			if !allowed[rounded] || math.Abs(req.TotalSum-float64(rounded)) > 0.0001 {
+				http.Error(w, "invalid plan amount", http.StatusBadRequest)
+				return
+			}
+
+			amount = rounded
+			switch rounded {
+			case 249:
+				planID = "starter"
+				planName = "Starter"
+			case 499:
+				planID = "pro"
+				planName = "Pro"
+			case 899:
+				planID = "dominator"
+				planName = "Dominator"
+			}
 		}
 
 		currency := envString("OCTO_CURRENCY", req.Currency)
@@ -131,12 +162,20 @@ func main() {
 		}
 		autoCapture := envBool("OCTO_AUTO_CAPTURE", true)
 
-		if req.Description == "" {
-			req.Description = "PAYMENT"
-		}
-
-		shopTransactionID := newTransactionID()
+		description := fmt.Sprintf("PERMITPULSE_%s", strings.ToUpper(planName))
+		shopTransactionID := planID + "_" + newTransactionID()
 		initTime := time.Now().Format("2006-01-02 15:04:05")
+
+		_ = store.Save(transactionRecord{
+			ShopTransactionID: shopTransactionID,
+			PlanID:            planID,
+			PlanName:          planName,
+			Amount:            amount,
+			Currency:          currency,
+			Status:            "initiated",
+			CreatedAt:         time.Now().UTC(),
+			UpdatedAt:         time.Now().UTC(),
+		})
 
 		octoReq := octoPreparePaymentRequest{
 			OctoShopID:        cfg.ShopID,
@@ -145,9 +184,9 @@ func main() {
 			AutoCapture:       autoCapture,
 			InitTime:          initTime,
 			Test:              test,
-			TotalSum:          float64(rounded),
+			TotalSum:          float64(amount),
 			Currency:          currency,
-			Description:       req.Description,
+			Description:       description,
 			PaymentMethods:    octoDefaultPaymentMethods(currency),
 			ReturnURL:         cfg.ReturnURL,
 			NotifyURL:         cfg.NotifyURL,
@@ -170,6 +209,8 @@ func main() {
 			http.Error(w, msg, http.StatusBadGateway)
 			return
 		}
+
+		_ = store.UpdateAfterPrepare(shopTransactionID, octoResp.Data)
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(octoResp.Data)
@@ -205,6 +246,32 @@ func main() {
 
 	mux.HandleFunc("/api/payments/octo/notify", handleOctoNotify)
 	mux.HandleFunc("/api/payments/notify", handleOctoNotify)
+
+	mux.HandleFunc("/api/payments/transactions", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		shopTransactionID := r.URL.Query().Get("shop_transaction_id")
+		if shopTransactionID == "" {
+			http.Error(w, "shop_transaction_id is required", http.StatusBadRequest)
+			return
+		}
+
+		rec, ok, err := store.Get(shopTransactionID)
+		if err != nil {
+			http.Error(w, "failed to read transaction", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(rec)
+	})
 
 	spa := newSPAHandler(distDir)
 	mux.Handle("/", spa)
@@ -361,7 +428,21 @@ func envBool(key string, fallback bool) bool {
 	return b
 }
 
+func amountForPlanID(planID string) (planName string, amount int, ok bool) {
+	switch strings.ToLower(strings.TrimSpace(planID)) {
+	case "starter":
+		return "Starter", 249, true
+	case "pro":
+		return "Pro", 499, true
+	case "dominator":
+		return "Dominator", 899, true
+	default:
+		return "", 0, false
+	}
+}
+
 type prepareRequest struct {
+	PlanID      string         `json:"plan_id"`
 	TotalSum    float64        `json:"total_sum"`
 	Currency    string         `json:"currency"`
 	Description string         `json:"description"`
@@ -578,6 +659,152 @@ type octoCallback struct {
 func computeOctoSignature(uniqueKey, uuid, status string) string {
 	sum := sha1.Sum([]byte(uniqueKey + uuid + status))
 	return strings.ToUpper(hex.EncodeToString(sum[:]))
+}
+
+type transactionRecord struct {
+	ShopTransactionID string        `json:"shop_transaction_id"`
+	PlanID            string        `json:"plan_id"`
+	PlanName          string        `json:"plan_name"`
+	Amount            int           `json:"amount"`
+	Currency          string        `json:"currency"`
+	Status            string        `json:"status"`
+	OctoPaymentUUID   string        `json:"octo_payment_UUID,omitempty"`
+	OctoPayURL        string        `json:"octo_pay_url,omitempty"`
+	RefundedSum       float64       `json:"refunded_sum,omitempty"`
+	TotalSum          float64       `json:"total_sum,omitempty"`
+	Callback          *octoCallback `json:"callback,omitempty"`
+	CreatedAt         time.Time     `json:"created_at"`
+	UpdatedAt         time.Time     `json:"updated_at"`
+}
+
+type transactionStore struct {
+	baseDir string
+	mu      sync.Mutex
+}
+
+func newTransactionStore(baseDir string) *transactionStore {
+	return &transactionStore{baseDir: baseDir}
+}
+
+func (s *transactionStore) Init() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return os.MkdirAll(filepath.Join(s.baseDir, "transactions"), 0o755)
+}
+
+func (s *transactionStore) pathFor(shopTransactionID string) string {
+	name := strings.ReplaceAll(shopTransactionID, string(os.PathSeparator), "_")
+	return filepath.Join(s.baseDir, "transactions", name+".json")
+}
+
+func (s *transactionStore) Get(shopTransactionID string) (transactionRecord, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var rec transactionRecord
+	p := s.pathFor(shopTransactionID)
+	b, err := os.ReadFile(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return rec, false, nil
+		}
+		return rec, false, err
+	}
+	if err := json.Unmarshal(b, &rec); err != nil {
+		return rec, false, err
+	}
+	return rec, true, nil
+}
+
+func (s *transactionStore) Save(rec transactionRecord) error {
+	if strings.TrimSpace(rec.ShopTransactionID) == "" {
+		return fmt.Errorf("missing shop_transaction_id")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if err := os.MkdirAll(filepath.Join(s.baseDir, "transactions"), 0o755); err != nil {
+		return err
+	}
+
+	b, err := json.MarshalIndent(rec, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	p := s.pathFor(rec.ShopTransactionID)
+	tmp := p + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, p); err == nil {
+		return nil
+	}
+	_ = os.Remove(p)
+	return os.Rename(tmp, p)
+}
+
+func (s *transactionStore) UpdateAfterPrepare(shopTransactionID string, data octoPreparePaymentData) error {
+	rec, ok, err := s.Get(shopTransactionID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		rec = transactionRecord{ShopTransactionID: shopTransactionID, CreatedAt: time.Now().UTC()}
+	}
+
+	if rec.PlanID == "" {
+		planID := strings.SplitN(shopTransactionID, "_", 2)[0]
+		if planName, amount, ok := amountForPlanID(planID); ok {
+			rec.PlanID = planID
+			rec.PlanName = planName
+			rec.Amount = amount
+		}
+	}
+
+	rec.OctoPaymentUUID = data.OctoPaymentUUID
+	rec.OctoPayURL = data.OctoPayURL
+	if data.Status != "" {
+		rec.Status = data.Status
+	}
+	if data.TotalSum != 0 {
+		rec.TotalSum = data.TotalSum
+	}
+	if data.RefundedSum != 0 {
+		rec.RefundedSum = data.RefundedSum
+	}
+	rec.UpdatedAt = time.Now().UTC()
+
+	return s.Save(rec)
+}
+
+func (s *transactionStore) UpdateFromCallback(cb octoCallback) error {
+	rec, ok, err := s.Get(cb.ShopTransactionID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		rec = transactionRecord{ShopTransactionID: cb.ShopTransactionID, CreatedAt: time.Now().UTC()}
+	}
+
+	if rec.PlanID == "" {
+		planID := strings.SplitN(cb.ShopTransactionID, "_", 2)[0]
+		if planName, amount, ok := amountForPlanID(planID); ok {
+			rec.PlanID = planID
+			rec.PlanName = planName
+			rec.Amount = amount
+		}
+	}
+
+	rec.Callback = &cb
+	rec.OctoPaymentUUID = cb.OctoPaymentUUID
+	if cb.Status != "" {
+		rec.Status = cb.Status
+	}
+	rec.UpdatedAt = time.Now().UTC()
+
+	return s.Save(rec)
 }
 
 func newTransactionID() string {

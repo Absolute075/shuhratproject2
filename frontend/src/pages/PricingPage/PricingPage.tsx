@@ -11,7 +11,7 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startPayment = async (plan: { id: string; amount: number; name: string }) => {
+  const startPayment = async (plan: { id: string; name: string }) => {
     if (loadingPlan !== null) return;
 
     setLoadingPlan(plan.id);
@@ -22,8 +22,7 @@ export default function PricingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          total_sum: plan.amount,
-          description: `PERMITPULSE_${plan.name.toUpperCase()}`
+          plan_id: plan.id
         })
       });
 
@@ -98,7 +97,7 @@ export default function PricingPage() {
                 className="button-pricing w-button"
                 onClick={(e) => {
                   e.preventDefault();
-                  void startPayment({ id: 'starter', amount: 249, name: 'Starter' });
+                  void startPayment({ id: 'starter', name: 'Starter' });
                 }}
                 aria-disabled={loadingPlan !== null}
               >
@@ -136,7 +135,7 @@ export default function PricingPage() {
                 className="button-pricing w-button"
                 onClick={(e) => {
                   e.preventDefault();
-                  void startPayment({ id: 'pro', amount: 499, name: 'Pro' });
+                  void startPayment({ id: 'pro', name: 'Pro' });
                 }}
                 aria-disabled={loadingPlan !== null}
               >
@@ -174,7 +173,7 @@ export default function PricingPage() {
                 className="button-pricing w-button"
                 onClick={(e) => {
                   e.preventDefault();
-                  void startPayment({ id: 'dominator', amount: 899, name: 'Dominator' });
+                  void startPayment({ id: 'dominator', name: 'Dominator' });
                 }}
                 aria-disabled={loadingPlan !== null}
               >

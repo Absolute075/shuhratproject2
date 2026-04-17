@@ -7,7 +7,13 @@ services:
     ports:
       - "8090:8090"
     env_file:
-      - .env
+      - backend/.env
     environment:
       BACKEND_ADDR: "0.0.0.0:8090"
+      APPLICATION_STORE_PATH: "/data"
+    volumes:
+      - permitpulse_data:/data
     restart: unless-stopped
+
+volumes:
+  permitpulse_data:

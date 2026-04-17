@@ -24,11 +24,14 @@ WORKDIR /app
 
 RUN adduser -D -H -s /sbin/nologin appuser
 
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 COPY --from=backend-builder /out/server /app/server
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 ENV BACKEND_ADDR=0.0.0.0:8090
 ENV FRONTEND_DIST=/app/frontend/dist
+ENV APPLICATION_STORE_PATH=/data
 
 EXPOSE 8090
 USER appuser
