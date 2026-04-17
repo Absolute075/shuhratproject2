@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -24,6 +26,7 @@ type healthResponse struct {
 
 func main() {
 	_ = loadDotEnv(".env")
+	_ = loadDotEnv("../.env")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -36,6 +39,42 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+
+	handleOctoNotify := func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		cfg, err := readOctoConfig()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "failed to read body", http.StatusBadRequest)
+			return
+		}
+
+		var cb octoCallback
+		if err := json.Unmarshal(body, &cb); err != nil {
+			http.Error(w, "invalid json body", http.StatusBadRequest)
+			return
+		}
+
+		if cfg.UniqueKey != "" {
+			expected := computeOctoSignature(cfg.UniqueKey, cb.OctoPaymentUUID, cb.Status)
+			if !strings.EqualFold(expected, cb.Signature) {
+				http.Error(w, "invalid signature", http.StatusUnauthorized)
+				return
+			}
+		}
+
+		log.Printf("octo notify: shop_transaction_id=%s uuid=%s status=%s", cb.ShopTransactionID, cb.OctoPaymentUUID, cb.Status)
+		w.WriteHeader(http.StatusNoContent)
+	}
 
 	mux.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -69,17 +108,31 @@ func main() {
 			http.Error(w, "total_sum must be > 0", http.StatusBadRequest)
 			return
 		}
-		if req.Currency == "" {
-			req.Currency = "UZS"
+
+		allowed := map[int]bool{249: true, 499: true, 899: true}
+		rounded := int(math.Round(req.TotalSum))
+		if !allowed[rounded] || math.Abs(req.TotalSum-float64(rounded)) > 0.0001 {
+			http.Error(w, "invalid plan amount", http.StatusBadRequest)
+			return
 		}
+
+		currency := envString("OCTO_CURRENCY", req.Currency)
+		if currency == "" {
+			currency = "UZS"
+		}
+		test := envBool("OCTO_TEST", req.Test)
+		language := envString("OCTO_LANGUAGE", req.Language)
+		if language == "" {
+			language = "ru"
+		}
+		ttl := envInt("OCTO_TTL", req.TTL)
+		if ttl == 0 {
+			ttl = 15
+		}
+		autoCapture := envBool("OCTO_AUTO_CAPTURE", true)
+
 		if req.Description == "" {
 			req.Description = "PAYMENT"
-		}
-		if req.Language == "" {
-			req.Language = "ru"
-		}
-		if req.TTL == 0 {
-			req.TTL = 15
 		}
 
 		shopTransactionID := newTransactionID()
@@ -89,17 +142,17 @@ func main() {
 			OctoShopID:        cfg.ShopID,
 			OctoSecret:        cfg.Secret,
 			ShopTransactionID: shopTransactionID,
-			AutoCapture:       true,
+			AutoCapture:       autoCapture,
 			InitTime:          initTime,
-			Test:              req.Test,
-			TotalSum:          req.TotalSum,
-			Currency:          req.Currency,
+			Test:              test,
+			TotalSum:          float64(rounded),
+			Currency:          currency,
 			Description:       req.Description,
-			PaymentMethods:    octoDefaultPaymentMethods(req.Currency),
+			PaymentMethods:    octoDefaultPaymentMethods(currency),
 			ReturnURL:         cfg.ReturnURL,
 			NotifyURL:         cfg.NotifyURL,
-			Language:          req.Language,
-			TTL:               req.TTL,
+			Language:          language,
+			TTL:               ttl,
 			UserData:          req.UserData,
 			Basket:            req.Basket,
 		}
@@ -150,48 +203,18 @@ func main() {
 		_ = json.NewEncoder(w).Encode(octoResp)
 	})
 
-	mux.HandleFunc("/api/payments/octo/notify", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-
-		cfg, err := readOctoConfig()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, "failed to read body", http.StatusBadRequest)
-			return
-		}
-
-		var cb octoCallback
-		if err := json.Unmarshal(body, &cb); err != nil {
-			http.Error(w, "invalid json body", http.StatusBadRequest)
-			return
-		}
-
-		if cfg.UniqueKey != "" {
-			expected := computeOctoSignature(cfg.UniqueKey, cb.OctoPaymentUUID, cb.Status)
-			if !strings.EqualFold(expected, cb.Signature) {
-				http.Error(w, "invalid signature", http.StatusUnauthorized)
-				return
-			}
-		}
-
-		log.Printf("octo notify: shop_transaction_id=%s uuid=%s status=%s", cb.ShopTransactionID, cb.OctoPaymentUUID, cb.Status)
-		w.WriteHeader(http.StatusNoContent)
-	})
+	mux.HandleFunc("/api/payments/octo/notify", handleOctoNotify)
+	mux.HandleFunc("/api/payments/notify", handleOctoNotify)
 
 	spa := newSPAHandler(distDir)
 	mux.Handle("/", spa)
 
 	h := withCORS(mux)
 
-	addr := ":" + port
+	addr := strings.TrimSpace(os.Getenv("BACKEND_ADDR"))
+	if addr == "" {
+		addr = ":" + port
+	}
 	log.Printf("listening on %s", addr)
 	log.Printf("serving frontend dist (if exists) from %s", distDir)
 	if err := http.ListenAndServe(addr, h); err != nil {
@@ -275,6 +298,18 @@ func withCORS(next http.Handler) http.Handler {
 		"http://127.0.0.1:5173": true,
 	}
 
+	if base := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL")); base != "" {
+		if u, err := url.Parse(base); err == nil {
+			origin := ""
+			if u.Scheme != "" && u.Host != "" {
+				origin = u.Scheme + "://" + u.Host
+			}
+			if origin != "" {
+				allowedOrigins[origin] = true
+			}
+		}
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin != "" && allowedOrigins[origin] {
@@ -292,6 +327,38 @@ func withCORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func envString(key, fallback string) string {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+func envInt(key string, fallback int) int {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return fallback
+	}
+	return i
+}
+
+func envBool(key string, fallback bool) bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return fallback
+	}
+	return b
 }
 
 type prepareRequest struct {
@@ -331,7 +398,11 @@ func readOctoConfig() (octoConfig, error) {
 		return octoConfig{}, fmt.Errorf("missing OCTO_SECRET")
 	}
 	if returnURL == "" {
-		returnURL = "http://localhost:5173/payment/return"
+		if base := strings.TrimSpace(os.Getenv("FRONTEND_BASE_URL")); base != "" {
+			returnURL = strings.TrimRight(base, "/") + "/payment/return"
+		} else {
+			returnURL = "http://localhost:5173/payment/return"
+		}
 	}
 
 	return octoConfig{ShopID: shopID, Secret: secret, ReturnURL: returnURL, NotifyURL: notifyURL, UniqueKey: uniqueKey}, nil

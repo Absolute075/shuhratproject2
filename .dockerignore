@@ -1,0 +1,24 @@
+# Node
+**/node_modules
+**/dist
+**/.vite
+
+# Go
+**/*.exe
+**/*.test
+**/*.out
+
+# VCS
+.git
+
+# IDE
+.vscode
+.idea
+
+# env
+.env
+.env.*
+
+# misc
+.DS_Store
+Thumbs.db

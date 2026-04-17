@@ -1,0 +1,13 @@
+services:
+  permitpulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: permitpulse:latest
+    ports:
+      - "8090:8090"
+    env_file:
+      - .env
+    environment:
+      BACKEND_ADDR: "0.0.0.0:8090"
+    restart: unless-stopped

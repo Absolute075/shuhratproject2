@@ -17,20 +17,13 @@ export default function PricingPage() {
     setLoadingPlan(plan.id);
     setError(null);
 
-    const test = import.meta.env.VITE_OCTO_TEST
-      ? String(import.meta.env.VITE_OCTO_TEST).toLowerCase() === 'true'
-      : import.meta.env.DEV;
-
     try {
       const res = await fetch('/api/payments/octo/prepare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           total_sum: plan.amount,
-          currency: 'USD',
-          description: `PERMITPULSE_${plan.name.toUpperCase()}`,
-          language: 'en',
-          test
+          description: `PERMITPULSE_${plan.name.toUpperCase()}`
         })
       });
 
