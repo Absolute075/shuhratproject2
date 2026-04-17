@@ -30,6 +30,21 @@
   border-radius: 12px;
 }
 
+.pp-legal .h1,
+.pp-legal .h2,
+.pp-legal .h3,
+.pp-legal .paragraph {
+  color: #111;
+}
+
+.pp-legal .cc-gray {
+  color: #666;
+}
+
+.pp-legal a {
+  color: #111;
+}
+
 .pp-legal-nav {
   display: flex;
   flex-wrap: wrap;
