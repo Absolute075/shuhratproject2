@@ -84,6 +84,26 @@ func main() {
 
 		if cb.ShopTransactionID != "" {
 			_ = store.UpdateFromCallback(cb)
+			if strings.EqualFold(cb.Status, "succeeded") {
+				rec, ok, err := store.Get(cb.ShopTransactionID)
+				if err == nil && ok {
+					if rec.TelegramNotifiedAt == nil {
+						err := sendTelegramPaymentSucceeded(rec)
+						if err == nil {
+							now := time.Now().UTC()
+							rec.TelegramNotifiedAt = &now
+							rec.TelegramLastError = ""
+							_ = store.Save(rec)
+						} else {
+							rec.TelegramLastError = err.Error()
+							_ = store.Save(rec)
+							if !strings.Contains(err.Error(), "not configured") {
+								log.Printf("telegram notify failed: %v", err)
+							}
+						}
+					}
+				}
+			}
 		}
 		log.Printf("octo notify: shop_transaction_id=%s uuid=%s status=%s", cb.ShopTransactionID, cb.OctoPaymentUUID, cb.Status)
 		w.WriteHeader(http.StatusNoContent)
@@ -662,19 +682,60 @@ func computeOctoSignature(uniqueKey, uuid, status string) string {
 }
 
 type transactionRecord struct {
-	ShopTransactionID string        `json:"shop_transaction_id"`
-	PlanID            string        `json:"plan_id"`
-	PlanName          string        `json:"plan_name"`
-	Amount            int           `json:"amount"`
-	Currency          string        `json:"currency"`
-	Status            string        `json:"status"`
-	OctoPaymentUUID   string        `json:"octo_payment_UUID,omitempty"`
-	OctoPayURL        string        `json:"octo_pay_url,omitempty"`
-	RefundedSum       float64       `json:"refunded_sum,omitempty"`
-	TotalSum          float64       `json:"total_sum,omitempty"`
-	Callback          *octoCallback `json:"callback,omitempty"`
-	CreatedAt         time.Time     `json:"created_at"`
-	UpdatedAt         time.Time     `json:"updated_at"`
+	ShopTransactionID  string        `json:"shop_transaction_id"`
+	PlanID             string        `json:"plan_id"`
+	PlanName           string        `json:"plan_name"`
+	Amount             int           `json:"amount"`
+	Currency           string        `json:"currency"`
+	Status             string        `json:"status"`
+	OctoPaymentUUID    string        `json:"octo_payment_UUID,omitempty"`
+	OctoPayURL         string        `json:"octo_pay_url,omitempty"`
+	RefundedSum        float64       `json:"refunded_sum,omitempty"`
+	TotalSum           float64       `json:"total_sum,omitempty"`
+	Callback           *octoCallback `json:"callback,omitempty"`
+	TelegramNotifiedAt *time.Time    `json:"telegram_notified_at,omitempty"`
+	TelegramLastError  string        `json:"telegram_last_error,omitempty"`
+	CreatedAt          time.Time     `json:"created_at"`
+	UpdatedAt          time.Time     `json:"updated_at"`
+}
+
+func sendTelegramPaymentSucceeded(rec transactionRecord) error {
+	token := strings.TrimSpace(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	chatID := strings.TrimSpace(os.Getenv("TELEGRAM_CHAT_ID"))
+	if token == "" || chatID == "" {
+		return fmt.Errorf("telegram is not configured")
+	}
+
+	text := fmt.Sprintf(
+		"Payment succeeded\nPlan: %s\nAmount: %d %s\nTransaction: %s\nUUID: %s\nStatus: %s",
+		rec.PlanName,
+		rec.Amount,
+		rec.Currency,
+		rec.ShopTransactionID,
+		rec.OctoPaymentUUID,
+		rec.Status,
+	)
+
+	form := url.Values{}
+	form.Set("chat_id", chatID)
+	form.Set("text", text)
+	form.Set("disable_web_page_preview", "true")
+
+	apiURL := "https://api.telegram.org/bot" + token + "/sendMessage"
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.PostForm(apiURL, form)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telegram http %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	return nil
 }
 
 type transactionStore struct {
