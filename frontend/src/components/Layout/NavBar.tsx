@@ -16,7 +16,8 @@ export default function NavBar() {
       { to: '/features', label: 'Features' },
       { to: '/pricing', label: 'Pricing' },
       { to: '/contact', label: 'Contact' },
-      { to: '/about', label: 'About', className: 'about' }
+      { to: '/about', label: 'About', className: 'about' },
+      { to: '/faq', label: 'FAQ' }
     ],
     []
   );
