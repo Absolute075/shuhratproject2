@@ -24,6 +24,10 @@
   margin: 0 auto;
   text-align: left;
   line-height: 1.6;
+  color: #111;
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
 }
 
 .pp-legal-nav {
@@ -40,5 +44,7 @@
 @media (max-width: 767px) {
   .pp-legal {
     max-width: 100%;
+    padding: 16px;
+    border-radius: 10px;
   }
 }
