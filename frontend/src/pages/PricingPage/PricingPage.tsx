@@ -10,12 +10,61 @@ type PrepareResponse = {
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [payUrl, setPayUrl] = useState<string | null>(null);
+
+  const isPaymentHostReachable = (octoPayUrl: string, timeoutMs = 2500): Promise<boolean> => {
+    let origin = '';
+    try {
+      origin = new URL(octoPayUrl).origin;
+    } catch {
+      return Promise.resolve(true);
+    }
+
+    const probeUrl = `${origin}/favicon.ico?ts=${Date.now()}`;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      let done = false;
+
+      const finish = (ok: boolean) => {
+        if (done) return;
+        done = true;
+        resolve(ok);
+      };
+
+      const timer = window.setTimeout(() => finish(false), timeoutMs);
+
+      img.onload = () => {
+        window.clearTimeout(timer);
+        finish(true);
+      };
+      img.onerror = () => {
+        window.clearTimeout(timer);
+        finish(false);
+      };
+
+      img.src = probeUrl;
+    });
+  };
 
   const startPayment = async (plan: { id: string; name: string }) => {
     if (loadingPlan !== null) return;
 
     setLoadingPlan(plan.id);
     setError(null);
+    setWarning(null);
+    setPayUrl(null);
+
+    const paymentWindow = window.open('about:blank', '_blank');
+    if (paymentWindow) {
+      try {
+        paymentWindow.document.title = 'Redirecting to payment…';
+        paymentWindow.document.body.innerHTML = '<p style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; padding: 24px;">Redirecting to payment…</p>';
+      } catch {
+        // ignore
+      }
+    }
 
     try {
       const res = await fetch('/api/payments/octo/prepare', {
@@ -35,9 +84,32 @@ export default function PricingPage() {
 
       localStorage.setItem('octo_shop_transaction_id', data.shop_transaction_id);
       localStorage.setItem('octo_plan', plan.name);
-      window.location.assign(data.octo_pay_url);
+
+      setPayUrl(data.octo_pay_url);
+
+      const reachable = await isPaymentHostReachable(data.octo_pay_url);
+      if (!reachable) {
+        setWarning('Платёжная страница Octo недоступна из вашей сети. Попробуйте мобильный интернет или VPN.');
+        if (paymentWindow) {
+          paymentWindow.close();
+        }
+        return;
+      }
+
+      if (paymentWindow) {
+        paymentWindow.location.assign(data.octo_pay_url);
+      } else {
+        const w = window.open(data.octo_pay_url, '_blank');
+        if (!w) {
+          setWarning('Не удалось открыть страницу оплаты в новой вкладке (возможно блокировка всплывающих окон). Откройте ссылку вручную.');
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error');
+      if (paymentWindow) {
+        paymentWindow.close();
+      }
+    } finally {
       setLoadingPlan(null);
     }
   };
@@ -183,6 +255,19 @@ export default function PricingPage() {
           </div>
 
           {error ? <div style={{ marginTop: 12, color: 'crimson' }}>{error}</div> : null}
+          {warning ? <div style={{ marginTop: 12, color: '#8a4b00' }}>{warning}</div> : null}
+          {payUrl ? (
+            <div style={{ marginTop: 12 }}>
+              <a href={payUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>
+                Открыть страницу оплаты
+              </a>
+              <div style={{ marginTop: 6 }}>
+                <a href="/payment/return" style={{ textDecoration: 'underline' }}>
+                  Проверить статус оплаты
+                </a>
+              </div>
+            </div>
+          ) : null}
 
           <h2 className="h2">
             <strong>

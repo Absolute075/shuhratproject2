@@ -182,8 +182,8 @@ func main() {
 		}
 		autoCapture := envBool("OCTO_AUTO_CAPTURE", true)
 
-		description := fmt.Sprintf("PERMITPULSE_%s", strings.ToUpper(planName))
-		shopTransactionID := planID + "_" + newTransactionID()
+		description := fmt.Sprintf("PermitPulse - %s plan", planName)
+		shopTransactionID := "pp-" + newTransactionID()
 		initTime := time.Now().Format("2006-01-02 15:04:05")
 
 		_ = store.Save(transactionRecord{
@@ -815,15 +815,6 @@ func (s *transactionStore) UpdateAfterPrepare(shopTransactionID string, data oct
 		rec = transactionRecord{ShopTransactionID: shopTransactionID, CreatedAt: time.Now().UTC()}
 	}
 
-	if rec.PlanID == "" {
-		planID := strings.SplitN(shopTransactionID, "_", 2)[0]
-		if planName, amount, ok := amountForPlanID(planID); ok {
-			rec.PlanID = planID
-			rec.PlanName = planName
-			rec.Amount = amount
-		}
-	}
-
 	rec.OctoPaymentUUID = data.OctoPaymentUUID
 	rec.OctoPayURL = data.OctoPayURL
 	if data.Status != "" {
@@ -847,15 +838,6 @@ func (s *transactionStore) UpdateFromCallback(cb octoCallback) error {
 	}
 	if !ok {
 		rec = transactionRecord{ShopTransactionID: cb.ShopTransactionID, CreatedAt: time.Now().UTC()}
-	}
-
-	if rec.PlanID == "" {
-		planID := strings.SplitN(cb.ShopTransactionID, "_", 2)[0]
-		if planName, amount, ok := amountForPlanID(planID); ok {
-			rec.PlanID = planID
-			rec.PlanName = planName
-			rec.Amount = amount
-		}
 	}
 
 	rec.Callback = &cb
