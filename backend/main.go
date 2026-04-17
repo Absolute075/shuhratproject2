@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -47,6 +48,16 @@ func main() {
 	if err := store.Init(); err != nil {
 		log.Printf("transaction store init error: %v", err)
 	}
+
+	contactWindowMin := envInt("CONTACT_RATE_LIMIT_WINDOW_MIN", 10)
+	if contactWindowMin <= 0 {
+		contactWindowMin = 10
+	}
+	contactMax := envInt("CONTACT_RATE_LIMIT_MAX", 5)
+	if contactMax <= 0 {
+		contactMax = 5
+	}
+	contactLimiter := newIPRateLimiter(contactMax, time.Duration(contactWindowMin)*time.Minute)
 
 	mux := http.NewServeMux()
 
@@ -117,6 +128,65 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(healthResponse{Status: "ok", Time: time.Now().UTC()})
+	})
+
+	mux.HandleFunc("/api/contact", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		ip := clientIP(r)
+		if ip != "" && !contactLimiter.Allow(ip) {
+			http.Error(w, "too many requests", http.StatusTooManyRequests)
+			return
+		}
+
+		var in struct {
+			Name    string `json:"name"`
+			Email   string `json:"email"`
+			Message string `json:"message"`
+			Website string `json:"website"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			http.Error(w, "invalid json body", http.StatusBadRequest)
+			return
+		}
+
+		if strings.TrimSpace(in.Website) != "" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		name := strings.TrimSpace(in.Name)
+		email := strings.TrimSpace(in.Email)
+		msg := strings.TrimSpace(in.Message)
+
+		if len(name) > 256 {
+			http.Error(w, "name too long", http.StatusBadRequest)
+			return
+		}
+		if len(email) == 0 || len(email) > 256 || !strings.Contains(email, "@") {
+			http.Error(w, "invalid email", http.StatusBadRequest)
+			return
+		}
+		if len(msg) == 0 || len(msg) > 2048 {
+			http.Error(w, "invalid message", http.StatusBadRequest)
+			return
+		}
+
+		ua := strings.TrimSpace(r.UserAgent())
+		text := fmt.Sprintf("Contact form\nName: %s\nEmail: %s\nMessage: %s\nIP: %s\nUA: %s", name, email, msg, ip, ua)
+		if len(text) > 3900 {
+			text = text[:3900]
+		}
+
+		if err := sendTelegramMessage(text); err != nil {
+			http.Error(w, "failed to send", http.StatusBadGateway)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	})
 
 	mux.HandleFunc("/api/payments/octo/prepare", func(w http.ResponseWriter, r *http.Request) {
@@ -461,6 +531,124 @@ func amountForPlanID(planID string) (planName string, amount int, ok bool) {
 	}
 }
 
+type ipRateLimiter struct {
+	max    int
+	window time.Duration
+	mu     sync.Mutex
+	items  map[string]ipRateLimiterItem
+}
+
+type ipRateLimiterItem struct {
+	Count   int
+	ResetAt time.Time
+}
+
+func newIPRateLimiter(max int, window time.Duration) *ipRateLimiter {
+	if max <= 0 {
+		max = 1
+	}
+	if window <= 0 {
+		window = time.Minute
+	}
+
+	return &ipRateLimiter{max: max, window: window, items: map[string]ipRateLimiterItem{}}
+}
+
+func (l *ipRateLimiter) Allow(key string) bool {
+	if strings.TrimSpace(key) == "" {
+		return true
+	}
+
+	now := time.Now()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	it, ok := l.items[key]
+	if !ok || now.After(it.ResetAt) {
+		l.items[key] = ipRateLimiterItem{Count: 1, ResetAt: now.Add(l.window)}
+		return true
+	}
+
+	if it.Count >= l.max {
+		return false
+	}
+	it.Count++
+	l.items[key] = it
+	return true
+}
+
+func clientIP(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+
+	if xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); xff != "" {
+		parts := strings.Split(xff, ",")
+		if len(parts) > 0 {
+			ip := strings.TrimSpace(parts[0])
+			if net.ParseIP(ip) != nil {
+				return ip
+			}
+		}
+	}
+
+	if xrip := strings.TrimSpace(r.Header.Get("X-Real-IP")); xrip != "" {
+		if net.ParseIP(xrip) != nil {
+			return xrip
+		}
+	}
+
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil {
+		if net.ParseIP(host) != nil {
+			return host
+		}
+	}
+
+	if net.ParseIP(strings.TrimSpace(r.RemoteAddr)) != nil {
+		return strings.TrimSpace(r.RemoteAddr)
+	}
+
+	return ""
+}
+
+func sendTelegramMessage(text string) error {
+	token := strings.TrimSpace(os.Getenv("TELEGRAM_BOT_TOKEN"))
+	chatID := strings.TrimSpace(os.Getenv("TELEGRAM_CHAT_ID"))
+	if token == "" || chatID == "" {
+		return fmt.Errorf("telegram is not configured")
+	}
+
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return fmt.Errorf("empty telegram message")
+	}
+	if len(text) > 3900 {
+		text = text[:3900]
+	}
+
+	form := url.Values{}
+	form.Set("chat_id", chatID)
+	form.Set("text", text)
+	form.Set("disable_web_page_preview", "true")
+
+	apiURL := "https://api.telegram.org/bot" + token + "/sendMessage"
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.PostForm(apiURL, form)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telegram http %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	return nil
+}
+
 type prepareRequest struct {
 	PlanID      string         `json:"plan_id"`
 	TotalSum    float64        `json:"total_sum"`
@@ -700,12 +888,6 @@ type transactionRecord struct {
 }
 
 func sendTelegramPaymentSucceeded(rec transactionRecord) error {
-	token := strings.TrimSpace(os.Getenv("TELEGRAM_BOT_TOKEN"))
-	chatID := strings.TrimSpace(os.Getenv("TELEGRAM_CHAT_ID"))
-	if token == "" || chatID == "" {
-		return fmt.Errorf("telegram is not configured")
-	}
-
 	text := fmt.Sprintf(
 		"Payment succeeded\nPlan: %s\nAmount: %d %s\nTransaction: %s\nUUID: %s\nStatus: %s",
 		rec.PlanName,
@@ -715,27 +897,7 @@ func sendTelegramPaymentSucceeded(rec transactionRecord) error {
 		rec.OctoPaymentUUID,
 		rec.Status,
 	)
-
-	form := url.Values{}
-	form.Set("chat_id", chatID)
-	form.Set("text", text)
-	form.Set("disable_web_page_preview", "true")
-
-	apiURL := "https://api.telegram.org/bot" + token + "/sendMessage"
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.PostForm(apiURL, form)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("telegram http %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
-	}
-
-	return nil
+	return sendTelegramMessage(text)
 }
 
 type transactionStore struct {

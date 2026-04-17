@@ -18,3 +18,27 @@
   opacity: 1;
   position: relative;
 }
+
+.pp-legal {
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: left;
+  line-height: 1.6;
+}
+
+.pp-legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pp-legal-nav a {
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .pp-legal {
+    max-width: 100%;
+  }
+}

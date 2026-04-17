@@ -43,12 +43,6 @@ export default function Footer() {
             </NavLink>
           </div>
 
-          <div className="footer-links-list">
-            <a href="https://webflow.com/" className="link-footer">
-              Powered by Webflow
-            </a>
-          </div>
-
           <div className="footer-social">
             <a href="#" className="link-social w-inline-block">
               <img
