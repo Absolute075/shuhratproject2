@@ -64,7 +64,7 @@
   background: var(--medium-sea-green);
 }
 
-.navigation:not(.w-nav):empty {
+.navigation:not(.w-nav) {
   display: none !important;
 }
 
