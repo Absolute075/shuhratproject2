@@ -61,6 +61,23 @@
     --pp-nav-offset: 72px;
   }
 
+  .navigation .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .navigation .logo img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-height: 40px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
   .navigation .navigation-container {
     position: relative;
     z-index: 1002;
@@ -78,21 +95,29 @@
     right: 0;
     top: 0;
     bottom: 0;
+    width: 100vw;
+    max-width: 100vw;
+    margin: 0;
     height: 100dvh;
     max-height: none;
-    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-top: calc(max(env(safe-area-inset-top), 0px) + var(--pp-nav-offset));
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    padding-left: 30px;
+    padding-right: 30px;
     overflow-y: auto;
     overflow-x: hidden;
+    background: rgba(10, 14, 26, 0.98);
     opacity: 0;
     visibility: hidden;
-    transform: translate3d(0, -10px, 0);
+    transform: translate3d(0, -100%, 0);
     transition:
       opacity 250ms ease,
-      transform 250ms ease,
+      transform 320ms ease,
       visibility 0ms linear 250ms;
     pointer-events: none;
     z-index: 1004;
+    box-sizing: border-box;
+    will-change: transform, opacity;
   }
 
   .navigation .nav-menu.w-nav-menu.w--open {
@@ -101,7 +126,7 @@
     transform: translate3d(0, 0, 0);
     transition:
       opacity 250ms ease,
-      transform 250ms ease,
+      transform 320ms ease,
       visibility 0ms linear 0ms;
     pointer-events: auto;
   }
@@ -154,21 +179,11 @@
 
 @media (max-width: 479px) {
   .navigation .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     max-width: calc(100% - 64px);
-    flex-wrap: nowrap;
-    min-width: 0;
   }
 
   .navigation .logo img {
-    display: block;
-    width: auto;
-    height: auto;
     max-height: 34px;
-    max-width: 100%;
-    object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
