@@ -67,13 +67,19 @@
 @media (max-width: 991px) {
   .navigation {
     --pp-nav-offset: 72px;
-    background: rgba(10, 14, 26, 0.55) !important;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
   }
 
   .navigation.pp-nav--inner {
     background: var(--medium-sea-green) !important;
+  }
+
+  .navigation .navigation-container {
+    background: transparent !important;
   }
 
   .navigation .logo.w-nav-brand {
