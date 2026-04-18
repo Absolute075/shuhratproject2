@@ -1,13 +1,25 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import HeroSlider from '../../components/HeroSlider/HeroSlider';
 
 export default function HomePage() {
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setHeroVisible(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
     <>
       <div className="header">
         <div className="header-content">
-          <h1 className="h1">Instant Building Permit Alerts for Contractors</h1>
-          <p className="paragraph">Get daily homeowner permit updates in your target ZIP codes</p>
+          <h1 className={`h1 pp-hero-anim${heroVisible ? ' is-visible' : ''}`}>
+            Instant Building Permit Alerts for Contractors
+          </h1>
+          <p className={`paragraph pp-hero-anim pp-hero-anim--sub${heroVisible ? ' is-visible' : ''}`}>
+            Get daily homeowner permit updates in your target ZIP codes
+          </p>
           <NavLink to="/pricing" className="button w-button">
             Get Started
           </NavLink>

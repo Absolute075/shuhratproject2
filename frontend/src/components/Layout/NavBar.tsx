@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 type NavItem = {
@@ -10,6 +10,10 @@ type NavItem = {
 export default function NavBar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   const items: NavItem[] = useMemo(
     () => [
