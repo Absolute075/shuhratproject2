@@ -67,11 +67,15 @@
 @media (max-width: 991px) {
   .navigation {
     --pp-nav-offset: 72px;
-    background: rgba(10, 14, 26, 0.35);
+    background: rgba(10, 14, 26, 0.92) !important;
   }
 
   .navigation.pp-nav--inner {
-    background: var(--medium-sea-green);
+    background: var(--medium-sea-green) !important;
+  }
+
+  .navigation .logo.w-nav-brand {
+    background-color: transparent !important;
   }
 
   .navigation .logo {
