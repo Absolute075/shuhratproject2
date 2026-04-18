@@ -108,6 +108,12 @@
   .navigation .menu-button.w-nav-button {
     position: relative;
     z-index: 1005;
+    width: 72px;
+    height: 72px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .navigation .nav-menu.w-nav-menu {
@@ -158,8 +164,8 @@
   }
 
   .navigation .menu-button .w-icon-nav-menu {
-    width: 24px;
-    height: 2px;
+    width: 36px;
+    height: 4px;
     background: currentColor;
     position: relative;
     display: block;
@@ -171,8 +177,8 @@
     content: '';
     position: absolute;
     left: 0;
-    width: 24px;
-    height: 2px;
+    width: 36px;
+    height: 4px;
     background: currentColor;
     transition:
       transform 200ms ease,
@@ -181,11 +187,11 @@
   }
 
   .navigation .menu-button .w-icon-nav-menu::before {
-    top: -7px;
+    top: -20px;
   }
 
   .navigation .menu-button .w-icon-nav-menu::after {
-    top: 7px;
+    top: 20px;
   }
 
   .navigation .menu-button.w--open .w-icon-nav-menu {
@@ -204,6 +210,11 @@
 }
 
 @media (max-width: 479px) {
+  .navigation .menu-button.w-nav-button {
+    width: 64px;
+    height: 64px;
+  }
+
   .navigation .logo {
     max-width: calc(100% - 64px);
   }
