@@ -87,7 +87,7 @@
     width: auto;
     height: auto;
     flex-shrink: 0;
-    max-height: 48px;
+    max-height: 56px;
     max-width: 100%;
     object-fit: contain;
   }
@@ -201,16 +201,16 @@
   }
 
   .navigation .logo img {
-    max-height: 42px;
+    max-height: 50px;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-width: 56vw;
+    max-width: 60vw;
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 40px;
-    max-width: 30vw;
+    max-height: 48px;
+    max-width: 34vw;
   }
 }
 
