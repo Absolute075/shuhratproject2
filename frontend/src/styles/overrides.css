@@ -67,9 +67,9 @@
 @media (max-width: 991px) {
   .navigation {
     --pp-nav-offset: 72px;
-    background: transparent !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    background: rgba(10, 14, 26, 0.92) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     box-shadow: none !important;
     border: 0 !important;
   }
@@ -100,17 +100,17 @@
     width: auto;
     flex-shrink: 0;
     height: auto;
-    max-height: clamp(40px, 8vw, 56px);
+    max-height: clamp(72px, 16vw, 120px);
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-height: clamp(40px, 8vw, 56px);
+    max-height: clamp(72px, 16vw, 120px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: clamp(36px, 7.2vw, 50px);
+    max-height: clamp(64px, 14vw, 110px);
   }
 
   .navigation .navigation-container {
@@ -119,6 +119,8 @@
     height: auto;
     align-items: center;
     padding-top: 0;
+    min-height: 132px;
+    overflow: hidden;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -148,7 +150,7 @@
     margin: 0;
     height: 100dvh;
     max-height: none;
-    padding-top: calc(max(env(safe-area-inset-top), 0px) + min(var(--pp-nav-offset), 96px));
+    padding-top: calc(max(env(safe-area-inset-top), 0px) + min(var(--pp-nav-offset), 140px));
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
     padding-left: 30px;
     padding-right: 30px;
@@ -234,6 +236,8 @@
     height: auto;
     align-items: center;
     padding-top: 0;
+    min-height: 116px;
+    overflow: hidden;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -247,16 +251,16 @@
 
   .navigation .logo img {
     height: auto;
-    max-height: clamp(36px, 10vw, 48px);
+    max-height: clamp(64px, 20vw, 104px);
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    max-height: clamp(36px, 10vw, 48px);
+    max-height: clamp(64px, 20vw, 104px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: clamp(32px, 9vw, 44px);
+    max-height: clamp(58px, 18vw, 96px);
     max-width: 34vw;
   }
 }
