@@ -415,11 +415,36 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if fileExists(candidate) {
 		if strings.HasPrefix(path, "/assets/") {
-			setImmutableAssetCacheHeaders(w)
+			base := strings.ToLower(filepath.Base(path))
+			if strings.HasPrefix(base, "index-") && (strings.HasSuffix(base, ".js") || strings.HasSuffix(base, ".css")) {
+				setNoCacheHeaders(w)
+			} else {
+				setImmutableAssetCacheHeaders(w)
+			}
 		} else if strings.HasSuffix(strings.ToLower(candidate), ".html") {
 			setNoCacheHeaders(w)
 		}
 		h.fs.ServeHTTP(w, r)
+		return
+	}
+
+	if strings.HasPrefix(path, "/assets/") {
+		base := filepath.Base(path)
+		lowerBase := strings.ToLower(base)
+		if strings.HasPrefix(lowerBase, "index-") {
+			switch {
+			case strings.HasSuffix(lowerBase, ".js"):
+				if serveLatestIndexAsset(w, r, h.distDir, ".js") {
+					return
+				}
+			case strings.HasSuffix(lowerBase, ".css"):
+				if serveLatestIndexAsset(w, r, h.distDir, ".css") {
+					return
+				}
+			}
+		}
+
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -441,12 +466,60 @@ func serveIndex(w http.ResponseWriter, r *http.Request, distDir string) {
 
 func setNoCacheHeaders(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	w.Header().Set("Surrogate-Control", "no-store")
+	w.Header().Set("CDN-Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
 }
 
 func setImmutableAssetCacheHeaders(w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+}
+
+func serveLatestIndexAsset(w http.ResponseWriter, r *http.Request, distDir string, ext string) bool {
+	assetsDir := filepath.Join(distDir, "assets")
+	entries, err := os.ReadDir(assetsDir)
+	if err != nil {
+		return false
+	}
+
+	var bestPath string
+	var bestMod time.Time
+
+	lowerExt := strings.ToLower(ext)
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
+		name := strings.ToLower(e.Name())
+		if !strings.HasPrefix(name, "index-") {
+			continue
+		}
+		if !strings.HasSuffix(name, lowerExt) {
+			continue
+		}
+		if strings.HasSuffix(name, ".map") {
+			continue
+		}
+
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if bestPath == "" || info.ModTime().After(bestMod) {
+			bestMod = info.ModTime()
+			bestPath = filepath.Join(assetsDir, e.Name())
+		}
+	}
+
+	if bestPath == "" {
+		return false
+	}
+
+	setNoCacheHeaders(w)
+	http.ServeFile(w, r, bestPath)
+	return true
 }
 
 func dirExists(path string) bool {
