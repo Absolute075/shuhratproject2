@@ -414,6 +414,11 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	candidate := filepath.Join(h.distDir, clean)
 
 	if fileExists(candidate) {
+		if strings.HasPrefix(path, "/assets/") {
+			setImmutableAssetCacheHeaders(w)
+		} else if strings.HasSuffix(strings.ToLower(candidate), ".html") {
+			setNoCacheHeaders(w)
+		}
 		h.fs.ServeHTTP(w, r)
 		return
 	}
@@ -422,6 +427,7 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, distDir string) {
+	setNoCacheHeaders(w)
 	indexPath := filepath.Join(distDir, "index.html")
 	if fileExists(indexPath) {
 		http.ServeFile(w, r, indexPath)
@@ -431,6 +437,16 @@ func serveIndex(w http.ResponseWriter, r *http.Request, distDir string) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("index.html not found in frontend dist."))
+}
+
+func setNoCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+}
+
+func setImmutableAssetCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 }
 
 func dirExists(path string) bool {
