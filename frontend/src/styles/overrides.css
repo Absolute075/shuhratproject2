@@ -87,17 +87,17 @@
     width: auto;
     height: auto;
     flex-shrink: 0;
-    max-height: 64px;
+    max-height: 72px;
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-height: 64px;
+    max-height: 72px;
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 58px;
+    max-height: 66px;
   }
 
   .navigation .navigation-container {
@@ -108,8 +108,8 @@
   .navigation .menu-button.w-nav-button {
     position: relative;
     z-index: 1005;
-    width: 72px;
-    height: 72px;
+    width: 56px;
+    height: 56px;
     padding: 0;
     display: flex;
     align-items: center;
@@ -164,8 +164,8 @@
   }
 
   .navigation .menu-button .w-icon-nav-menu {
-    width: 36px;
-    height: 4px;
+    width: 32px;
+    height: 3px;
     background: currentColor;
     position: relative;
     display: block;
@@ -177,8 +177,8 @@
     content: '';
     position: absolute;
     left: 0;
-    width: 36px;
-    height: 4px;
+    width: 32px;
+    height: 3px;
     background: currentColor;
     transition:
       transform 200ms ease,
@@ -187,11 +187,11 @@
   }
 
   .navigation .menu-button .w-icon-nav-menu::before {
-    top: -20px;
+    top: -8px;
   }
 
   .navigation .menu-button .w-icon-nav-menu::after {
-    top: 20px;
+    top: 8px;
   }
 
   .navigation .menu-button.w--open .w-icon-nav-menu {
@@ -211,25 +211,28 @@
 
 @media (max-width: 479px) {
   .navigation .menu-button.w-nav-button {
-    width: 64px;
-    height: 64px;
+    width: 52px;
+    height: 52px;
   }
 
   .navigation .logo {
-    max-width: calc(100% - 64px);
+    max-width: calc(100% - 56px);
   }
 
   .navigation .logo img {
-    max-height: 54px;
+    height: 58px;
+    max-height: 58px;
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    max-height: 54px;
+    height: 58px;
+    max-height: 58px;
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 50px;
+    height: 54px;
+    max-height: 54px;
     max-width: 34vw;
   }
 }
