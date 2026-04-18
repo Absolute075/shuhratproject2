@@ -87,14 +87,23 @@
     width: auto;
     height: auto;
     flex-shrink: 0;
-    max-height: 68px;
+    max-height: 86px;
     max-width: 100%;
     object-fit: contain;
+  }
+
+  .navigation .logo img:nth-child(1) {
+    max-height: 86px;
+  }
+
+  .navigation .logo img:nth-child(2) {
+    max-height: 78px;
   }
 
   .navigation .navigation-container {
     position: relative;
     z-index: 1002;
+    height: 112px;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -196,21 +205,26 @@
 }
 
 @media (max-width: 479px) {
+  .navigation .navigation-container {
+    height: 96px;
+  }
+
   .navigation .logo {
     max-width: calc(100% - 64px);
   }
 
   .navigation .logo img {
-    max-height: 58px;
+    max-height: 72px;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-width: 68vw;
+    max-width: 72vw;
+    max-height: 72px;
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 56px;
-    max-width: 38vw;
+    max-height: 66px;
+    max-width: 42vw;
   }
 }
 
