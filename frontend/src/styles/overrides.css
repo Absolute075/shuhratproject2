@@ -68,8 +68,9 @@
   .navigation {
     --pp-nav-offset: 72px;
     background: rgba(10, 14, 26, 0.92) !important;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    padding-top: max(env(safe-area-inset-top), 0px);
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
     box-shadow: none !important;
     border: 0 !important;
   }
@@ -99,18 +100,20 @@
     display: block;
     width: auto;
     flex-shrink: 0;
-    height: auto;
-    max-height: clamp(72px, 16vw, 120px);
+    height: clamp(72px, 16vw, 132px);
+    max-height: clamp(72px, 16vw, 132px);
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-height: clamp(72px, 16vw, 120px);
+    height: clamp(72px, 16vw, 132px);
+    max-height: clamp(72px, 16vw, 132px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: clamp(64px, 14vw, 110px);
+    height: clamp(64px, 14vw, 120px);
+    max-height: clamp(64px, 14vw, 120px);
   }
 
   .navigation .navigation-container {
@@ -119,8 +122,7 @@
     height: auto;
     align-items: center;
     padding-top: 0;
-    min-height: 132px;
-    overflow: hidden;
+    min-height: 0;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -236,8 +238,7 @@
     height: auto;
     align-items: center;
     padding-top: 0;
-    min-height: 116px;
-    overflow: hidden;
+    min-height: 0;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -250,17 +251,19 @@
   }
 
   .navigation .logo img {
-    height: auto;
-    max-height: clamp(64px, 20vw, 104px);
+    height: clamp(64px, 20vw, 112px);
+    max-height: clamp(64px, 20vw, 112px);
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    max-height: clamp(64px, 20vw, 104px);
+    height: clamp(64px, 20vw, 112px);
+    max-height: clamp(64px, 20vw, 112px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: clamp(58px, 18vw, 96px);
+    height: clamp(58px, 18vw, 104px);
+    max-height: clamp(58px, 18vw, 104px);
     max-width: 34vw;
   }
 }
