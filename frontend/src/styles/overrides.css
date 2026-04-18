@@ -19,35 +19,6 @@
   position: relative;
 }
 
-.pp-hero-anim {
-  opacity: 0;
-  transform: translate3d(0, 40px, 0) scale3d(1, 1, 1) rotateX(-50deg) rotateY(0) rotateZ(0) skew(0, 0);
-  transform-style: preserve-3d;
-  transition:
-    opacity 600ms ease,
-    transform 600ms ease;
-  will-change: opacity, transform;
-}
-
-.pp-hero-anim.pp-hero-anim--sub {
-  transform: translate3d(0, 60px, 0) scale3d(1, 1, 1) rotateX(-60deg) rotateY(0) rotateZ(0) skew(0, 0);
-  transition-delay: 80ms;
-}
-
-.pp-hero-anim.is-visible {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale3d(1, 1, 1) rotateX(0) rotateY(0) rotateZ(0) skew(0, 0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pp-hero-anim,
-  .pp-hero-anim.pp-hero-anim--sub {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 .pp-legal {
   max-width: 980px;
   margin: 0 auto;

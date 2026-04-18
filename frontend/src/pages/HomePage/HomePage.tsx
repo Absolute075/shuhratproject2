@@ -1,23 +1,114 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import HeroSlider from '../../components/HeroSlider/HeroSlider';
 
 export default function HomePage() {
-  const [heroVisible, setHeroVisible] = useState(false);
+  const h1Ref = useRef<HTMLHeadingElement | null>(null);
+  const pRef = useRef<HTMLParagraphElement | null>(null);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => setHeroVisible(true));
-    return () => cancelAnimationFrame(raf);
+    const h1 = h1Ref.current;
+    const p = pRef.current;
+    if (!h1 || !p) return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const outExpo = (t: number) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+    const outQuart = (t: number) => 1 - Math.pow(1 - t, 4);
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const setTransform = (el: HTMLElement, yPx: number, rotateXDeg: number) => {
+      const tr = `translate3d(0px, ${yPx}px, 0px) scale3d(1, 1, 1) rotateX(${rotateXDeg}deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg)`;
+      el.style.transform = tr;
+      (el.style as any).webkitTransform = tr;
+      (el.style as any).mozTransform = tr;
+      (el.style as any).msTransform = tr;
+      el.style.transformStyle = 'preserve-3d';
+    };
+
+    const setOpacity = (el: HTMLElement, v: number) => {
+      el.style.opacity = String(v);
+    };
+
+    // Initial state (matches Webflow exported inline styles)
+    setTransform(h1, 40, -50);
+    setOpacity(h1, 0);
+    setTransform(p, 60, -60);
+    setOpacity(p, 0);
+
+    if (prefersReducedMotion) {
+      setTransform(h1, 0, 0);
+      setOpacity(h1, 1);
+      setTransform(p, 0, 0);
+      setOpacity(p, 1);
+      return;
+    }
+
+    const delayMs = 250;
+    const durationMs = 2000;
+    const startAt = performance.now() + delayMs;
+
+    let rafId = 0;
+    const tick = (now: number) => {
+      if (now < startAt) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      const t = Math.min(1, Math.max(0, (now - startAt) / durationMs));
+
+      // h1: move + opacity (outExpo), rotateX (outQuart)
+      const h1Move = outExpo(t);
+      const h1Rot = outQuart(t);
+      setTransform(h1, lerp(40, 0, h1Move), lerp(-50, 0, h1Rot));
+      setOpacity(h1, lerp(0, 1, h1Move));
+
+      // p: move + opacity (outExpo), rotateX (outQuart)
+      const pMove = outExpo(t);
+      const pRot = outQuart(t);
+      setTransform(p, lerp(60, 0, pMove), lerp(-60, 0, pRot));
+      setOpacity(p, lerp(0, 1, pMove));
+
+      if (t < 1) {
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   return (
     <>
       <div className="header">
         <div className="header-content">
-          <h1 className={`h1 pp-hero-anim${heroVisible ? ' is-visible' : ''}`}>
+          <h1
+            ref={h1Ref}
+            data-w-id="b777ef2d-ac03-cea3-ccc5-52beeee5222a"
+            style={{
+              transform:
+                'translate3d(0px, 40px, 0px) scale3d(1, 1, 1) rotateX(-50deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg)',
+              transformStyle: 'preserve-3d',
+              opacity: 0
+            }}
+            className="h1"
+          >
             Instant Building Permit Alerts for Contractors
           </h1>
-          <p className={`paragraph pp-hero-anim pp-hero-anim--sub${heroVisible ? ' is-visible' : ''}`}>
+          <p
+            ref={pRef}
+            data-w-id="cd085e48-08fc-46a5-a6c3-97346f451e6d"
+            style={{
+              opacity: 0,
+              transform:
+                'translate3d(0px, 60px, 0px) scale3d(1, 1, 1) rotateX(-60deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg)',
+              transformStyle: 'preserve-3d'
+            }}
+            className="paragraph"
+          >
             Get daily homeowner permit updates in your target ZIP codes
           </p>
           <NavLink to="/pricing" className="button w-button">
