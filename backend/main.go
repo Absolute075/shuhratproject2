@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -416,11 +417,20 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if fileExists(candidate) {
 		if strings.HasPrefix(path, "/assets/") {
 			base := strings.ToLower(filepath.Base(path))
-			if strings.HasPrefix(base, "index-") && (strings.HasSuffix(base, ".js") || strings.HasSuffix(base, ".css")) {
-				setNoCacheHeaders(w)
-			} else {
-				setImmutableAssetCacheHeaders(w)
+			if strings.HasPrefix(base, "index-") {
+				switch {
+				case strings.HasSuffix(base, ".js"):
+					if serveLatestIndexAsset(w, r, h.distDir, ".js") {
+						return
+					}
+				case strings.HasSuffix(base, ".css"):
+					if serveLatestIndexAsset(w, r, h.distDir, ".css") {
+						return
+					}
+				}
 			}
+
+			setImmutableAssetCacheHeaders(w)
 		} else if strings.HasSuffix(strings.ToLower(candidate), ".html") {
 			setNoCacheHeaders(w)
 		}
@@ -477,6 +487,23 @@ func setImmutableAssetCacheHeaders(w http.ResponseWriter) {
 }
 
 func serveLatestIndexAsset(w http.ResponseWriter, r *http.Request, distDir string, ext string) bool {
+	indexPath := filepath.Join(distDir, "index.html")
+	if b, err := os.ReadFile(indexPath); err == nil {
+		// The Vite build references /assets/index-<hash>.{js,css}. Always serve the asset referenced
+		// by the current index.html so stale cached index.html can't pin users to old entry bundles.
+		lowerExt := strings.ToLower(ext)
+		re := regexp.MustCompile(`/assets/index-[^"']+\` + regexp.QuoteMeta(lowerExt) + `\b`)
+		if m := re.Find(b); len(m) > 0 {
+			p := filepath.FromSlash(strings.TrimPrefix(string(m), "/"))
+			full := filepath.Join(distDir, p)
+			if fileExists(full) {
+				setNoCacheHeaders(w)
+				http.ServeFile(w, r, full)
+				return true
+			}
+		}
+	}
+
 	assetsDir := filepath.Join(distDir, "assets")
 	entries, err := os.ReadDir(assetsDir)
 	if err != nil {

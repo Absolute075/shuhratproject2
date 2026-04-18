@@ -12,6 +12,7 @@ export default function NavBar() {
   const location = useLocation();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const isHome = location.pathname === '/';
 
   useEffect(() => {
     setOpen(false);
@@ -72,7 +73,7 @@ export default function NavBar() {
       data-easing="ease-out"
       data-easing2="ease-out"
       role="banner"
-      className="navigation w-nav"
+      className={`navigation w-nav ${isHome ? 'pp-nav--home' : 'pp-nav--inner'}`}
     >
       <div ref={containerRef} className="navigation-container">
         <NavLink
