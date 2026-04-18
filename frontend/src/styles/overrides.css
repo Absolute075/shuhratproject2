@@ -86,26 +86,26 @@
     display: block;
     width: auto;
     flex-shrink: 0;
-    height: 260px;
-    max-height: 260px;
+    height: 220px;
+    max-height: 220px;
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    height: 260px;
-    max-height: 260px;
+    height: 220px;
+    max-height: 220px;
   }
 
   .navigation .logo img:nth-child(2) {
-    height: 240px;
-    max-height: 240px;
+    height: 205px;
+    max-height: 205px;
   }
 
   .navigation .navigation-container {
     position: relative;
     z-index: 1002;
-    height: 300px;
+    height: 250px;
     align-items: flex-start;
     padding-top: 16px;
   }
@@ -119,6 +119,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .navigation .menu-button.w-nav-button.w--open {
+    background-color: transparent !important;
   }
 
   .navigation .nav-menu.w-nav-menu {
@@ -216,7 +220,7 @@
 
 @media (max-width: 479px) {
   .navigation .navigation-container {
-    height: 260px;
+    height: 220px;
     align-items: flex-start;
     padding-top: 12px;
   }
@@ -231,19 +235,19 @@
   }
 
   .navigation .logo img {
-    height: 220px;
-    max-height: 220px;
+    height: 190px;
+    max-height: 190px;
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    height: 220px;
-    max-height: 220px;
+    height: 190px;
+    max-height: 190px;
   }
 
   .navigation .logo img:nth-child(2) {
-    height: 200px;
-    max-height: 200px;
+    height: 175px;
+    max-height: 175px;
     max-width: 34vw;
   }
 }
