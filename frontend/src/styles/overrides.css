@@ -67,7 +67,9 @@
 @media (max-width: 991px) {
   .navigation {
     --pp-nav-offset: 72px;
-    background: rgba(10, 14, 26, 0.92) !important;
+    background: rgba(10, 14, 26, 0.55) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 
   .navigation.pp-nav--inner {
@@ -90,28 +92,26 @@
     display: block;
     width: auto;
     flex-shrink: 0;
-    height: 220px;
-    max-height: 220px;
+    height: auto;
+    max-height: 64px;
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    height: 220px;
-    max-height: 220px;
+    max-height: 64px;
   }
 
   .navigation .logo img:nth-child(2) {
-    height: 205px;
-    max-height: 205px;
+    max-height: 56px;
   }
 
   .navigation .navigation-container {
     position: relative;
     z-index: 1002;
-    height: 250px;
-    align-items: flex-start;
-    padding-top: 16px;
+    height: auto;
+    align-items: center;
+    padding-top: 0;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -224,9 +224,9 @@
 
 @media (max-width: 479px) {
   .navigation .navigation-container {
-    height: 220px;
-    align-items: flex-start;
-    padding-top: 12px;
+    height: auto;
+    align-items: center;
+    padding-top: 0;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -239,19 +239,17 @@
   }
 
   .navigation .logo img {
-    height: 190px;
-    max-height: 190px;
+    height: auto;
+    max-height: 56px;
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    height: 190px;
-    max-height: 190px;
+    max-height: 56px;
   }
 
   .navigation .logo img:nth-child(2) {
-    height: 175px;
-    max-height: 175px;
+    max-height: 48px;
     max-width: 34vw;
   }
 }
