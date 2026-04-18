@@ -85,24 +85,29 @@
   .navigation .logo img {
     display: block;
     width: auto;
-    height: auto;
     flex-shrink: 0;
-    max-height: 72px;
+    height: 260px;
+    max-height: 260px;
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-height: 72px;
+    height: 260px;
+    max-height: 260px;
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 66px;
+    height: 240px;
+    max-height: 240px;
   }
 
   .navigation .navigation-container {
     position: relative;
     z-index: 1002;
+    height: 300px;
+    align-items: flex-start;
+    padding-top: 16px;
   }
 
   .navigation .menu-button.w-nav-button {
@@ -128,7 +133,7 @@
     margin: 0;
     height: 100dvh;
     max-height: none;
-    padding-top: calc(max(env(safe-area-inset-top), 0px) + var(--pp-nav-offset));
+    padding-top: calc(max(env(safe-area-inset-top), 0px) + min(var(--pp-nav-offset), 96px));
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
     padding-left: 30px;
     padding-right: 30px;
@@ -210,6 +215,12 @@
 }
 
 @media (max-width: 479px) {
+  .navigation .navigation-container {
+    height: 260px;
+    align-items: flex-start;
+    padding-top: 12px;
+  }
+
   .navigation .menu-button.w-nav-button {
     width: 52px;
     height: 52px;
@@ -220,19 +231,19 @@
   }
 
   .navigation .logo img {
-    height: 58px;
-    max-height: 58px;
+    height: 220px;
+    max-height: 220px;
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    height: 58px;
-    max-height: 58px;
+    height: 220px;
+    max-height: 220px;
   }
 
   .navigation .logo img:nth-child(2) {
-    height: 54px;
-    max-height: 54px;
+    height: 200px;
+    max-height: 200px;
     max-width: 34vw;
   }
 }
