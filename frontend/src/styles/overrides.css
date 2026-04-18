@@ -83,9 +83,10 @@
   .navigation .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: nowrap;
     min-width: 0;
+    max-width: calc(100% - 72px);
   }
 
   .navigation .logo img {
@@ -93,17 +94,17 @@
     width: auto;
     flex-shrink: 0;
     height: auto;
-    max-height: 86px;
+    max-height: clamp(86px, 18vw, 140px);
     max-width: 100%;
     object-fit: contain;
   }
 
   .navigation .logo img:nth-child(1) {
-    max-height: 86px;
+    max-height: clamp(86px, 18vw, 140px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 78px;
+    max-height: clamp(78px, 16vw, 130px);
   }
 
   .navigation .navigation-container {
@@ -240,16 +241,16 @@
 
   .navigation .logo img {
     height: auto;
-    max-height: 74px;
+    max-height: clamp(74px, 22vw, 120px);
   }
 
   .navigation .logo img:nth-child(1) {
     max-width: 60vw;
-    max-height: 74px;
+    max-height: clamp(74px, 22vw, 120px);
   }
 
   .navigation .logo img:nth-child(2) {
-    max-height: 66px;
+    max-height: clamp(66px, 20vw, 110px);
     max-width: 34vw;
   }
 }
