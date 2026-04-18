@@ -413,8 +413,16 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	clean := filepath.Clean(filepath.FromSlash(strings.TrimPrefix(path, "/")))
 	candidate := filepath.Join(h.distDir, clean)
+	lowerCandidate := strings.ToLower(candidate)
 
 	if fileExists(candidate) {
+		// If any stale HTML files exist in dist (e.g. from an old Webflow export),
+		// never serve them. They will break SPA refresh by showing different markup.
+		if strings.HasSuffix(lowerCandidate, ".html") && strings.ToLower(filepath.Base(candidate)) != "index.html" {
+			serveIndex(w, r, h.distDir)
+			return
+		}
+
 		if strings.HasPrefix(path, "/assets/") {
 			base := strings.ToLower(filepath.Base(path))
 			if strings.HasPrefix(base, "index-") {
@@ -463,8 +471,14 @@ func (h *spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func serveIndex(w http.ResponseWriter, r *http.Request, distDir string) {
 	setNoCacheHeaders(w)
+	if r.URL.Query().Get("pp_clear_cache") == "1" {
+		w.Header().Set("Clear-Site-Data", "\"cache\"")
+	}
 	indexPath := filepath.Join(distDir, "index.html")
 	if fileExists(indexPath) {
+		if st, err := os.Stat(indexPath); err == nil {
+			w.Header().Set("X-PermitPulse-Index-Mtime", strconv.FormatInt(st.ModTime().Unix(), 10))
+		}
 		http.ServeFile(w, r, indexPath)
 		return
 	}

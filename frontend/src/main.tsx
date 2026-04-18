@@ -4,7 +4,17 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './styles/overrides.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root');
+if (rootEl) {
+  const stray = Array.from(document.querySelectorAll('.navigation')) as HTMLElement[];
+  for (const el of stray) {
+    if (!rootEl.contains(el)) {
+      el.remove();
+    }
+  }
+}
+
+ReactDOM.createRoot(rootEl!).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
