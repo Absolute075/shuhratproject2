@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
 type NavItem = {
@@ -10,10 +10,47 @@ type NavItem = {
 export default function NavBar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const container = containerRef.current;
+    if (!root || !container) return;
+
+    const update = () => {
+      const h = container.getBoundingClientRect().height;
+      root.style.setProperty('--pp-nav-offset', `${Math.round(h)}px`);
+    };
+
+    update();
+
+    if (typeof ResizeObserver === 'function') {
+      const ro = new ResizeObserver(() => update());
+      ro.observe(container);
+      window.addEventListener('resize', update);
+      return () => {
+        ro.disconnect();
+        window.removeEventListener('resize', update);
+      };
+    }
+
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const items: NavItem[] = useMemo(
     () => [
@@ -28,6 +65,7 @@ export default function NavBar() {
 
   return (
     <div
+      ref={rootRef}
       data-collapse="medium"
       data-animation="default"
       data-duration="400"
@@ -36,11 +74,11 @@ export default function NavBar() {
       role="banner"
       className="navigation w-nav"
     >
-      <div className="navigation-container">
+      <div ref={containerRef} className="navigation-container">
         <NavLink
           to="/"
           aria-current={location.pathname === '/' ? 'page' : undefined}
-          className={({ isActive }) => `logo w-inline-block${isActive ? ' w--current' : ''}`}
+          className={({ isActive }) => `logo w-nav-brand${isActive ? ' w--current' : ''}`}
           onClick={() => setOpen(false)}
         >
           <img

@@ -57,24 +57,127 @@
 }
 
 @media (max-width: 991px) {
+  .navigation {
+    --pp-nav-offset: 72px;
+  }
+
+  .navigation .navigation-container {
+    position: relative;
+    z-index: 1002;
+  }
+
+  .navigation .menu-button.w-nav-button {
+    position: relative;
+    z-index: 1005;
+  }
+
   .navigation .nav-menu.w-nav-menu {
     display: block;
-    max-height: 0;
-    overflow: hidden;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    height: 100dvh;
+    max-height: none;
+    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+    overflow-y: auto;
+    overflow-x: hidden;
     opacity: 0;
-    transform: translateY(-10px);
+    visibility: hidden;
+    transform: translate3d(0, -10px, 0);
     transition:
-      max-height 300ms ease,
       opacity 250ms ease,
-      transform 250ms ease;
+      transform 250ms ease,
+      visibility 0ms linear 250ms;
     pointer-events: none;
+    z-index: 1004;
   }
 
   .navigation .nav-menu.w-nav-menu.w--open {
-    max-height: 80vh;
     opacity: 1;
-    transform: translateY(0);
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity 250ms ease,
+      transform 250ms ease,
+      visibility 0ms linear 0ms;
     pointer-events: auto;
+  }
+
+  .navigation .menu-button .w-icon-nav-menu {
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    position: relative;
+    display: block;
+    transition: background 200ms ease;
+  }
+
+  .navigation .menu-button .w-icon-nav-menu::before,
+  .navigation .menu-button .w-icon-nav-menu::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    transition:
+      transform 200ms ease,
+      top 200ms ease,
+      opacity 200ms ease;
+  }
+
+  .navigation .menu-button .w-icon-nav-menu::before {
+    top: -7px;
+  }
+
+  .navigation .menu-button .w-icon-nav-menu::after {
+    top: 7px;
+  }
+
+  .navigation .menu-button.w--open .w-icon-nav-menu {
+    background: transparent;
+  }
+
+  .navigation .menu-button.w--open .w-icon-nav-menu::before {
+    top: 0;
+    transform: rotate(45deg);
+  }
+
+  .navigation .menu-button.w--open .w-icon-nav-menu::after {
+    top: 0;
+    transform: rotate(-45deg);
+  }
+}
+
+@media (max-width: 479px) {
+  .navigation .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100% - 64px);
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .navigation .logo img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-height: 34px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .navigation .logo img:nth-child(1) {
+    max-width: 56vw;
+  }
+
+  .navigation .logo img:nth-child(2) {
+    max-height: 32px;
+    max-width: 30vw;
   }
 }
 
