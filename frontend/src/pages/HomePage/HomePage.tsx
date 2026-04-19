@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import NavBar from '../../components/Layout/NavBar';
 import HeroSlider from '../../components/HeroSlider/HeroSlider';
 
 export default function HomePage() {
@@ -85,7 +84,6 @@ export default function HomePage() {
   return (
     <>
       <div className="header">
-        <NavBar />
         <div className="header-content">
           <h1
             ref={h1Ref}
