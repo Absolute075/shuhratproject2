@@ -10,7 +10,7 @@ type NavItem = {
 export default function NavBar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isHome = location.pathname === '/';
 
@@ -65,21 +65,16 @@ export default function NavBar() {
   );
 
   return (
-    <div
+    <header
       ref={rootRef}
-      data-collapse="medium"
-      data-animation="default"
-      data-duration="400"
-      data-easing="ease-out"
-      data-easing2="ease-out"
       role="banner"
-      className={`navigation w-nav ${isHome ? 'pp-nav--home' : 'pp-nav--inner'}`}
+      className={`pp-nav ${isHome ? 'pp-nav--home' : 'pp-nav--inner'}${open ? ' is-open' : ''}`}
     >
-      <div ref={containerRef} className="navigation-container">
+      <div ref={containerRef} className="pp-nav__container">
         <NavLink
           to="/"
           aria-current={location.pathname === '/' ? 'page' : undefined}
-          className={({ isActive }) => `logo w-nav-brand${isActive ? ' w--current' : ''}`}
+          className={({ isActive }) => `pp-nav__brand${isActive ? ' is-active' : ''}`}
           onClick={() => setOpen(false)}
         >
           <img
@@ -94,7 +89,7 @@ export default function NavBar() {
           />
         </NavLink>
 
-        <nav role="navigation" className={`nav-menu w-nav-menu${open ? ' w--open' : ''}`}>
+        <nav role="navigation" className="pp-nav__menu">
           {items.map((it) => (
             <NavLink
               key={it.to}
@@ -118,13 +113,12 @@ export default function NavBar() {
           </NavLink>
         </nav>
 
-        <div
-          className={`menu-button w-nav-button${open ? ' w--open' : ''}`}
+        <button
+          type="button"
+          className="pp-nav__toggle"
           onClick={() => setOpen((v) => !v)}
-          role="button"
           aria-label="Toggle menu"
           aria-expanded={open}
-          tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -132,9 +126,9 @@ export default function NavBar() {
             }
           }}
         >
-          <div className="icon-2 w-icon-nav-menu"></div>
-        </div>
+          <span className="pp-nav__icon" aria-hidden="true"></span>
+        </button>
       </div>
-    </div>
+    </header>
   );
 }
