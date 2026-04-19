@@ -96,6 +96,10 @@ body,
   position: relative;
 }
 
+.header-inner {
+  position: relative;
+}
+
 .header > .pp-nav.pp-nav--home {
   position: absolute;
   top: 10px;
@@ -110,7 +114,25 @@ body,
   padding-bottom: 18px;
 }
 
+.header-inner > .pp-nav.pp-nav--inner {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: transparent;
+}
+
+.header-inner > .pp-nav.pp-nav--inner .pp-nav__container {
+  padding-top: 28px;
+  padding-bottom: 18px;
+}
+
 .header .header-content {
+  padding-top: 184px;
+}
+
+.header-inner .header-inner-content {
   padding-top: 184px;
 }
 
@@ -217,6 +239,11 @@ body,
     padding-bottom: 12px;
   }
 
+  .header-inner > .pp-nav.pp-nav--inner .pp-nav__container {
+    padding-top: clamp(26px, 7vw, 40px);
+    padding-bottom: 12px;
+  }
+
   .header > .pp-nav.pp-nav--home .pp-nav__brand {
     justify-content: flex-start;
     margin-left: clamp(-6px, -1vw, -2px);
@@ -232,6 +259,10 @@ body,
   }
 
   .header > .header-content {
+    padding-top: clamp(182px, 40vw, 260px);
+  }
+
+  .header-inner .header-inner-content {
     padding-top: clamp(182px, 40vw, 260px);
   }
 

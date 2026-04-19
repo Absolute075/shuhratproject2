@@ -1,9 +1,11 @@
 import { NavLink } from 'react-router-dom';
+import NavBar from '../../components/Layout/NavBar';
 
 export default function FeaturesPage() {
   return (
     <>
       <div className="header-inner">
+        <NavBar />
         <div className="container">
           <div className="header-inner-content">
             <div className="inner-category">

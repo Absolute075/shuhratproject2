@@ -6,7 +6,9 @@ import NavBar from './NavBar';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const showGlobalNav = location.pathname !== '/';
+  const showGlobalNav = !['/', '/features', '/pricing', '/contact', '/about', '/faq', '/privacyterms'].includes(
+    location.pathname
+  );
 
   useEffect(() => {
     const hash = location.hash ? decodeURIComponent(location.hash.replace('#', '')) : '';

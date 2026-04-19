@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import NavBar from '../../components/Layout/NavBar';
 
 type PrepareResponse = {
   shop_transaction_id: string;
@@ -117,6 +119,7 @@ export default function PricingPage() {
   return (
     <>
       <div className="header-inner">
+        <NavBar />
         <div className="container">
           <div className="header-inner-content">
             <div className="inner-category">

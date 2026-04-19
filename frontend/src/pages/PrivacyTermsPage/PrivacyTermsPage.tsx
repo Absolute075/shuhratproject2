@@ -1,7 +1,10 @@
+import NavBar from '../../components/Layout/NavBar';
+
 export default function PrivacyTermsPage() {
   return (
     <>
       <div className="header-inner">
+        <NavBar />
         <div className="container">
           <div className="header-inner-content">
             <div className="inner-category">

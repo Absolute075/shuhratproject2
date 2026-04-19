@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import NavBar from '../../components/Layout/NavBar';
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -43,6 +44,7 @@ export default function ContactPage() {
   return (
     <>
       <div className="header-inner">
+        <NavBar />
         <div className="container">
           <div className="header-inner-content">
             <div className="inner-category">
