@@ -56,13 +56,30 @@
   text-decoration: underline;
 }
 
+html,
+body,
+.body,
+#root {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
 .pp-nav {
   z-index: 2000;
   width: 100%;
   box-sizing: border-box;
-  border: 0;
-  outline: 0;
-  box-shadow: none;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.pp-nav::before,
+.pp-nav::after {
+  box-shadow: none !important;
+  border: 0 !important;
 }
 
 .pp-nav--home {
