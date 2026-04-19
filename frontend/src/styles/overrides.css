@@ -98,7 +98,7 @@ body,
 
 .header > .pp-nav.pp-nav--home {
   position: absolute;
-  top: 0;
+  top: 10px;
   left: 0;
   right: 0;
   z-index: 20;
@@ -106,12 +106,12 @@ body,
 }
 
 .header > .pp-nav.pp-nav--home .pp-nav__container {
-  padding-top: 18px;
+  padding-top: 28px;
   padding-bottom: 18px;
 }
 
 .header .header-content {
-  padding-top: 160px;
+  padding-top: 184px;
 }
 
 .pp-nav__container {
@@ -193,17 +193,17 @@ body,
   }
 
   .pp-nav--home .pp-nav__brand img {
-    height: clamp(92px, 20vw, 164px);
-    max-height: clamp(92px, 20vw, 164px);
+    height: clamp(104px, 22vw, 178px);
+    max-height: clamp(104px, 22vw, 178px);
   }
 
   .pp-nav--home .pp-nav__brand img:nth-child(2) {
-    height: clamp(84px, 18vw, 146px);
-    max-height: clamp(84px, 18vw, 146px);
+    height: clamp(96px, 20vw, 158px);
+    max-height: clamp(96px, 20vw, 158px);
   }
 
   .header > .pp-nav.pp-nav--home .pp-nav__container {
-    padding-top: clamp(14px, 4vw, 22px);
+    padding-top: clamp(26px, 7vw, 40px);
     padding-bottom: 12px;
   }
 
@@ -215,7 +215,7 @@ body,
   }
 
   .header > .header-content {
-    padding-top: clamp(148px, 34vw, 220px);
+    padding-top: clamp(182px, 40vw, 260px);
   }
 
   .pp-nav__toggle {
@@ -237,14 +237,14 @@ body,
     pointer-events: auto;
     touch-action: manipulation;
     position: absolute;
-    top: 50%;
+    top: calc(50% + 10px);
     right: max(env(safe-area-inset-right), clamp(16px, 4vw, 24px));
     transform: translateY(-50%);
   }
 
   .pp-nav--home .pp-nav__toggle {
-    width: 68px;
-    height: 68px;
+    width: 72px;
+    height: 72px;
   }
 
   .pp-nav--home .pp-nav__icon {
