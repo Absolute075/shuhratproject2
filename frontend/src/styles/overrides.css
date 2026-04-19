@@ -60,6 +60,9 @@
   z-index: 2000;
   width: 100%;
   box-sizing: border-box;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
 }
 
 .pp-nav--home {
@@ -81,6 +84,7 @@
   justify-content: space-between;
   padding-left: 24px;
   padding-right: 24px;
+  position: relative;
 }
 
 .pp-nav__brand {
@@ -114,6 +118,8 @@
   .pp-nav {
     padding-top: env(safe-area-inset-top, 0px);
     overflow-x: clip;
+    border-top: 0;
+    box-shadow: none;
   }
 
   .pp-nav__container {
@@ -154,6 +160,10 @@
     border: 0;
     color: inherit;
     cursor: pointer;
+    position: relative;
+    z-index: 1006;
+    pointer-events: auto;
+    touch-action: manipulation;
   }
 
   .pp-nav__icon {
