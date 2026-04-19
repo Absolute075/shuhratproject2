@@ -112,7 +112,7 @@
 
 @media (max-width: 991px) {
   .pp-nav {
-    padding-top: max(env(safe-area-inset-top), 0px);
+    padding-top: env(safe-area-inset-top, 0px);
     overflow-x: clip;
   }
 
@@ -125,28 +125,28 @@
 
   .pp-nav__brand {
     align-items: flex-start;
-    padding-top: 6px;
+    padding-top: 0;
     margin-right: auto;
   }
 
   .pp-nav__brand img {
     flex-shrink: 1;
-    height: clamp(72px, 16vw, 132px);
-    max-height: clamp(72px, 16vw, 132px);
+    height: clamp(84px, 18vw, 152px);
+    max-height: clamp(84px, 18vw, 152px);
   }
 
   .pp-nav__brand img:nth-child(2) {
-    height: clamp(64px, 14vw, 120px);
-    max-height: clamp(64px, 14vw, 120px);
+    height: clamp(76px, 16vw, 136px);
+    max-height: clamp(76px, 16vw, 136px);
   }
 
   .pp-nav__toggle {
     display: flex;
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     padding: 0;
     margin-left: 12px;
-    margin-top: 4px;
+    margin-top: 0;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
@@ -157,8 +157,8 @@
   }
 
   .pp-nav__icon {
-    width: 32px;
-    height: 3px;
+    width: 38px;
+    height: 4px;
     background: currentColor;
     position: relative;
     display: block;
@@ -170,8 +170,8 @@
     content: '';
     position: absolute;
     left: 0;
-    width: 32px;
-    height: 3px;
+    width: 38px;
+    height: 4px;
     background: currentColor;
     transition:
       transform 200ms ease,
@@ -180,11 +180,11 @@
   }
 
   .pp-nav__icon::before {
-    top: -8px;
+    top: -10px;
   }
 
   .pp-nav__icon::after {
-    top: 8px;
+    top: 10px;
   }
 
   .pp-nav.is-open .pp-nav__icon {
